@@ -7,4 +7,11 @@ class DownloadManager {
 		set_transient( 'edu_download_' . $token, array( 'product_id' => $product_id, 'user_id' => $user_id ), HOUR_IN_SECONDS );
 		return add_query_arg( 'edu_download', $token, home_url( '/' ) );
 	}
+
+	/**
+	 * Verify a download token.
+	 */
+	public function verify_token( $token ) {
+		return get_transient( 'edu_download_' . $token );
+	}
 }

@@ -46,8 +46,18 @@ final class EdupreneurPro {
 		add_action( 'plugins_loaded', array( $this, 'on_plugins_loaded' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
 		add_action( 'init', array( $this, 'track_affiliate_referral' ) );
+		add_action( 'admin_init', array( $this, 'ensure_admin_capabilities' ) );
 		add_shortcode( 'edu_student_dashboard', array( $this, 'render_student_dashboard' ) );
 		register_activation_hook( __FILE__, array( $this, 'activate' ) );
+	}
+
+	/**
+	 * Ensure admin has necessary capabilities.
+	 */
+	public function ensure_admin_capabilities() {
+		if ( current_user_can( 'administrator' ) && ! current_user_can( 'manage_edu_courses' ) ) {
+			\EdupreneurPro\Core\Auth\Roles::grant_admin_caps();
+		}
 	}
 
 	/**
@@ -58,11 +68,32 @@ final class EdupreneurPro {
 			return '<p>' . esc_html__( 'Please log in to view your courses.', 'edupreneur-pro' ) . '</p>';
 		}
 
+		global $wpdb;
+		$student_id = get_current_user_id();
+		$courses = $wpdb->get_results( $wpdb->prepare(
+			"SELECT c.* FROM {$wpdb->prefix}edu_courses c
+			JOIN {$wpdb->prefix}edu_enrollments e ON c.id = e.course_id
+			WHERE e.student_id = %d AND e.status = 'active'",
+			$student_id
+		) );
+
 		ob_start();
 		echo '<div class="edu-student-dashboard">';
 		echo '<h2>' . esc_html__( 'My Courses', 'edupreneur-pro' ) . '</h2>';
 		echo '<p>' . esc_html__( 'Welcome back! Here are the courses you are currently enrolled in.', 'edupreneur-pro' ) . '</p>';
-		echo '<div class="edu-grid"><div class="edu-card"><p>' . esc_html__( 'No courses found.', 'edupreneur-pro' ) . '</p></div></div>';
+
+		if ( empty( $courses ) ) {
+			echo '<div class="edu-grid"><div class="edu-card"><p>' . esc_html__( 'No courses found.', 'edupreneur-pro' ) . '</p></div></div>';
+		} else {
+			echo '<div class="edu-grid">';
+			foreach ( $courses as $course ) {
+				echo '<div class="edu-card">';
+				echo '<h3>' . esc_html( $course->title ) . '</h3>';
+				echo '<p>' . esc_html( wp_trim_words( $course->description, 20 ) ) . '</p>';
+				echo '</div>';
+			}
+			echo '</div>';
+		}
 		echo '</div>';
 		return ob_get_clean();
 	}
@@ -109,7 +140,7 @@ final class EdupreneurPro {
 	public function on_plugins_loaded() {}
 }
 
-function EdupreneurPro() {
+function edupreneur_pro_init() {
 	return EdupreneurPro::instance();
 }
-EdupreneurPro();
+edupreneur_pro_init();
