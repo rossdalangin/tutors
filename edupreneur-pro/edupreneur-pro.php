@@ -12,6 +12,21 @@ if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
 	require_once __DIR__ . '/vendor/autoload.php';
 }
 
+// Fallback Autoloader.
+spl_autoload_register( function ( $class ) {
+	$prefix = 'EdupreneurPro\\';
+	$base_dir = __DIR__ . '/src/';
+	$len = strlen( $prefix );
+	if ( strncmp( $prefix, $class, $len ) !== 0 ) {
+		return;
+	}
+	$relative_class = substr( $class, $len );
+	$file = $base_dir . str_replace( '\\', '/', $relative_class ) . '.php';
+	if ( file_exists( $file ) ) {
+		require $file;
+	}
+} );
+
 final class EdupreneurPro {
 	private static $instance;
 	public $container;
@@ -29,7 +44,45 @@ final class EdupreneurPro {
 		$this->init_container();
 		$this->init_modules();
 		add_action( 'plugins_loaded', array( $this, 'on_plugins_loaded' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
+		add_action( 'init', array( $this, 'track_affiliate_referral' ) );
+		add_shortcode( 'edu_student_dashboard', array( $this, 'render_student_dashboard' ) );
 		register_activation_hook( __FILE__, array( $this, 'activate' ) );
+	}
+
+	/**
+	 * Render student dashboard shortcode.
+	 */
+	public function render_student_dashboard() {
+		if ( ! is_user_logged_in() ) {
+			return '<p>' . esc_html__( 'Please log in to view your courses.', 'edupreneur-pro' ) . '</p>';
+		}
+
+		ob_start();
+		echo '<div class="edu-student-dashboard">';
+		echo '<h2>' . esc_html__( 'My Courses', 'edupreneur-pro' ) . '</h2>';
+		echo '<p>' . esc_html__( 'Welcome back! Here are the courses you are currently enrolled in.', 'edupreneur-pro' ) . '</p>';
+		echo '<div class="edu-grid"><div class="edu-card"><p>' . esc_html__( 'No courses found.', 'edupreneur-pro' ) . '</p></div></div>';
+		echo '</div>';
+		return ob_get_clean();
+	}
+
+	/**
+	 * Track affiliate referral.
+	 */
+	public function track_affiliate_referral() {
+		if ( isset( $_GET['ref'] ) ) {
+			setcookie( 'edu_affiliate', sanitize_text_field( $_GET['ref'] ), time() + ( 30 * DAY_IN_SECONDS ), COOKIEPATH, COOKIE_DOMAIN );
+		}
+	}
+
+	/**
+	 * Enqueue admin assets.
+	 */
+	public function enqueue_admin_assets( $hook ) {
+		if ( strpos( $hook, 'edu' ) !== false || strpos( $hook, 'edupreneur' ) !== false ) {
+			wp_enqueue_style( 'edu-admin-css', plugin_dir_url( __FILE__ ) . 'assets/css/admin.css', array(), EDUPRENEUR_PRO_VERSION );
+		}
 	}
 
 	private function define_constants() {

@@ -5,6 +5,7 @@ use EdupreneurPro\Core\Modules\ModuleInterface;
 use EdupreneurPro\Core\Container;
 use EdupreneurPro\Modules\Payments\Repositories\OrderRepository;
 use EdupreneurPro\Modules\Payments\Gateways\StripeGateway;
+use EdupreneurPro\Modules\Payments\Controllers\PaymentController;
 
 class PaymentModule implements ModuleInterface {
 	private $container;
@@ -12,6 +13,12 @@ class PaymentModule implements ModuleInterface {
 	public function init() {
 		$this->container->set( 'order_repository', new OrderRepository() );
 		$this->container->set( 'stripe_gateway', new StripeGateway() );
+
+		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
+	}
+	public function register_routes() {
+		$controller = new PaymentController();
+		$controller->register_routes();
 	}
 	public function get_id() { return 'payments'; }
 }
