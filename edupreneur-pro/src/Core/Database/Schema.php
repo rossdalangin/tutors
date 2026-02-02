@@ -82,6 +82,7 @@ class Schema {
 				id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
 				course_id bigint(20) UNSIGNED DEFAULT 0,
 				user_id bigint(20) UNSIGNED NOT NULL,
+				parent_id bigint(20) UNSIGNED DEFAULT 0,
 				content text NOT NULL,
 				is_pinned tinyint(1) DEFAULT 0,
 				created_at datetime DEFAULT CURRENT_TIMESTAMP,
