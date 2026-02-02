@@ -87,7 +87,7 @@ class Schema {
 				is_pinned tinyint(1) DEFAULT 0,
 				created_at datetime DEFAULT CURRENT_TIMESTAMP,
 				PRIMARY KEY  (id)
-			) $charset_collate;";
+			) $charset_collate;",
 
 			"{$prefix}quizzes" => "CREATE TABLE {$prefix}quizzes (
 				id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -95,7 +95,7 @@ class Schema {
 				title varchar(255) NOT NULL,
 				questions longtext,
 				PRIMARY KEY  (id)
-			) $charset_collate;";
+			) $charset_collate;",
 
 			"{$prefix}assignments" => "CREATE TABLE {$prefix}assignments (
 				id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,

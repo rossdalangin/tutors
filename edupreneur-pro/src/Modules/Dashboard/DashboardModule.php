@@ -50,7 +50,7 @@ class DashboardModule implements ModuleInterface {
 
 	public function render_dashboard() {
 		$analytics = new AnalyticsEngine();
-		$stats = array( 'gross' => 0, 'net' => 0 );
+		$stats = $analytics->get_revenue_stats();
 
 		echo '<div class="edu-admin-wrap">';
 		echo '<header class="edu-header"><h1>' . esc_html__( 'Tutor Business Dashboard', 'edupreneur-pro' ) . '</h1>';
