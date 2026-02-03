@@ -8,6 +8,12 @@ class CourseRepository {
 	}
 	public function all() {
 		global $wpdb;
-		return $wpdb->get_results( "SELECT * FROM {$this->table}" );
+		return $wpdb->get_results( "SELECT * FROM {$this->table} ORDER BY created_at DESC" );
+	}
+
+	public function create( $data ) {
+		global $wpdb;
+		$inserted = $wpdb->insert( $this->table, $data );
+		return $inserted ? $wpdb->insert_id : false;
 	}
 }

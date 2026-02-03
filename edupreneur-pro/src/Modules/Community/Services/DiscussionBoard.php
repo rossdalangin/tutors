@@ -13,6 +13,14 @@ class DiscussionBoard {
 	}
 	public function create_post( $data ) {
 		global $wpdb;
+
+		if ( empty( $data['content'] ) ) {
+			return false;
+		}
+
+		$data['content'] = wp_kses_post( $data['content'] );
+		$data['user_id'] = get_current_user_id();
+
 		return $wpdb->insert( $this->table, $data );
 	}
 }

@@ -4,15 +4,15 @@ namespace EdupreneurPro\Modules\CourseBuilder\Controllers;
 use WP_REST_Controller;
 use WP_REST_Server;
 use WP_REST_Response;
-use EdupreneurPro\Modules\CourseBuilder\Repositories\LessonRepository;
+use EdupreneurPro\Modules\CourseBuilder\Repositories\ModuleRepository;
 
-class LessonController extends WP_REST_Controller {
+class ModuleController extends WP_REST_Controller {
 	protected $namespace = 'edupreneur/v1';
-	protected $rest_base = 'lessons';
+	protected $rest_base = 'modules';
 	private $repository;
 
 	public function __construct() {
-		$this->repository = new LessonRepository();
+		$this->repository = new ModuleRepository();
 	}
 
 	public function register_routes() {
@@ -25,7 +25,7 @@ class LessonController extends WP_REST_Controller {
 			array(
 				'methods'             => WP_REST_Server::CREATABLE,
 				'callback'            => array( $this, 'create_item' ),
-				'permission_callback' => function() { return current_user_can( 'manage_edu_lessons' ); },
+				'permission_callback' => function() { return current_user_can( 'manage_edu_courses' ); },
 			),
 		) );
 	}

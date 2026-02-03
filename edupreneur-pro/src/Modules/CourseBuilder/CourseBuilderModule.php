@@ -6,6 +6,7 @@ use EdupreneurPro\Core\Modules\ModuleInterface;
 use EdupreneurPro\Core\Container;
 use EdupreneurPro\Modules\CourseBuilder\Controllers\CourseController;
 use EdupreneurPro\Modules\CourseBuilder\Controllers\LessonController;
+use EdupreneurPro\Modules\CourseBuilder\Controllers\ModuleController;
 use EdupreneurPro\Modules\CourseBuilder\Admin\CourseAdmin;
 
 class CourseBuilderModule implements ModuleInterface {
@@ -28,6 +29,9 @@ class CourseBuilderModule implements ModuleInterface {
 	public function register_routes() {
 		$course_controller = new CourseController();
 		$course_controller->register_routes();
+
+		$module_controller = new ModuleController();
+		$module_controller->register_routes();
 
 		$lesson_controller = new LessonController();
 		$lesson_controller->register_routes();

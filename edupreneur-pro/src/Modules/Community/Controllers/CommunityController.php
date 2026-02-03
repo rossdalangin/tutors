@@ -19,7 +19,22 @@ class CommunityController extends WP_REST_Controller {
 				'callback'            => array( $this, 'get_posts' ),
 				'permission_callback' => function() { return is_user_logged_in(); },
 			),
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'create_post' ),
+				'permission_callback' => function() { return is_user_logged_in(); },
+			),
 		) );
+	}
+
+	public function create_post( $request ) {
+		$board = new DiscussionBoard();
+		$data = array(
+			'course_id' => intval( $request['course_id'] ),
+			'content'   => sanitize_textarea_field( $request['content'] ),
+		);
+		$id = $board->create_post( $data );
+		return new WP_REST_Response( array( 'id' => $id ), 201 );
 	}
 
 	public function get_posts( $request ) {

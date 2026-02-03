@@ -21,7 +21,7 @@ class DashboardModule implements ModuleInterface {
 	public function register_dashboard_menu() {
 		add_submenu_page(
 			'edupreneur-pro',
-			__( 'Business Dashboard', 'edupreneur-pro' ),
+			__( 'Business Insights', 'edupreneur-pro' ),
 			__( 'Business Dashboard', 'edupreneur-pro' ),
 			'view_edu_reports',
 			'edu-dashboard',
@@ -30,7 +30,7 @@ class DashboardModule implements ModuleInterface {
 
 		add_submenu_page(
 			'edupreneur-pro',
-			__( 'Help & Support', 'edupreneur-pro' ),
+			__( 'Learning Guides', 'edupreneur-pro' ),
 			__( 'Help & Support', 'edupreneur-pro' ),
 			'read',
 			'edu-help',
@@ -40,11 +40,22 @@ class DashboardModule implements ModuleInterface {
 
 	public function render_help_page() {
 		echo '<div class="edu-admin-wrap">';
-		echo '<header class="edu-header"><h1>' . esc_html__( 'Help & Support', 'edupreneur-pro' ) . '</h1>';
-		echo '<p>' . esc_html__( 'Find guides and documentation to help you get the most out of EdupreneurPro.', 'edupreneur-pro' ) . '</p></header>';
+		echo '<header class="edu-header"><h1>' . esc_html__( 'EdupreneurPro Knowledge Base', 'edupreneur-pro' ) . '</h1>';
+		echo '<p>' . esc_html__( 'Master every feature of your education business system. From setup to scale, we have you covered.', 'edupreneur-pro' ) . '</p></header>';
 
-		echo '<div class="edu-card"><h3>' . esc_html__( 'Documentation', 'edupreneur-pro' ) . '</h3>';
-		echo '<p>' . esc_html__( 'Check out the /docs folder in the plugin directory for the full manual, API references, and security reports.', 'edupreneur-pro' ) . '</p></div>';
+		echo '<div class="edu-grid">';
+		echo '<div class="edu-card"><h3>' . esc_html__( 'Getting Started Guide', 'edupreneur-pro' ) . '</h3>';
+		echo '<p>' . esc_html__( 'Learn how to configure your payment gateways, set up your instructor profile, and launch your first course in under 15 minutes.', 'edupreneur-pro' ) . '</p></div>';
+
+		echo '<div class="edu-card"><h3>' . esc_html__( 'Maximizing Revenue', 'edupreneur-pro' ) . '</h3>';
+		echo '<p>' . esc_html__( 'Discover how to use the built-in affiliate engine and subscription models to create sustainable, recurring income.', 'edupreneur-pro' ) . '</p></div>';
+
+		echo '<div class="edu-card"><h3>' . esc_html__( 'Developer API Reference', 'edupreneur-pro' ) . '</h3>';
+		echo '<p>' . esc_html__( 'Extend EdupreneurPro with our robust REST API. Perfect for building custom mobile apps or third-party integrations.', 'edupreneur-pro' ) . '</p></div>';
+		echo '</div>';
+
+		echo '<div class="edu-guide-section"><h4>' . esc_html__( 'Need Technical Assistance?', 'edupreneur-pro' ) . '</h4>';
+		echo '<p>' . esc_html__( 'Detailed documentation files (API.md, Manual.md) are available in the plugin directory for advanced users and developers.', 'edupreneur-pro' ) . '</p></div>';
 		echo '</div>';
 	}
 
@@ -53,29 +64,29 @@ class DashboardModule implements ModuleInterface {
 		$stats = $analytics->get_revenue_stats();
 
 		echo '<div class="edu-admin-wrap">';
-		echo '<header class="edu-header"><h1>' . esc_html__( 'Tutor Business Dashboard', 'edupreneur-pro' ) . '</h1>';
-		echo '<p>' . esc_html__( 'Monitor your revenue, student growth, and affiliate performance.', 'edupreneur-pro' ) . '</p></header>';
+		echo '<header class="edu-header"><h1>' . esc_html__( 'Business Performance Overview', 'edupreneur-pro' ) . '</h1>';
+		echo '<p>' . esc_html__( 'Real-time analytics to help you make data-driven decisions for your education business.', 'edupreneur-pro' ) . '</p></header>';
 
-		echo '<div class="edu-guide-section"><h4>' . esc_html__( 'Getting Started', 'edupreneur-pro' ) . '</h4>';
-		echo '<p>' . esc_html__( 'Use this dashboard to keep track of your business health. You can see real-time earnings and course engagement metrics below.', 'edupreneur-pro' ) . '</p></div>';
+		echo '<div class="edu-guide-section"><h4>' . esc_html__( 'Understanding Your Metrics', 'edupreneur-pro' ) . '</h4>';
+		echo '<p>' . esc_html__( 'Use the Gross Revenue to see total sales volume, and Net Revenue to understand your actual profitability after refunds and costs.', 'edupreneur-pro' ) . '</p></div>';
 
 		echo '<div class="edu-grid">';
 		echo '<div class="edu-card">';
-		echo '<h3>' . esc_html__( 'Gross Revenue', 'edupreneur-pro' ) . '</h3>';
+		echo '<h3>' . esc_html__( 'Gross Sales Volume', 'edupreneur-pro' ) . '</h3>';
 		echo '<div class="edu-stat-val">$' . number_format( $stats['gross'], 2 ) . '</div>';
-		echo '<p>' . esc_html__( 'Total revenue before refunds and commissions.', 'edupreneur-pro' ) . '</p>';
+		echo '<p>' . esc_html__( 'Total transaction value before any deductions.', 'edupreneur-pro' ) . '</p>';
 		echo '</div>';
 
 		echo '<div class="edu-card">';
-		echo '<h3>' . esc_html__( 'Net Revenue', 'edupreneur-pro' ) . '</h3>';
+		echo '<h3>' . esc_html__( 'Net Business Profit', 'edupreneur-pro' ) . '</h3>';
 		echo '<div class="edu-stat-val">$' . number_format( $stats['net'], 2 ) . '</div>';
-		echo '<p>' . esc_html__( 'Actual profit after all deductions.', 'edupreneur-pro' ) . '</p>';
+		echo '<p>' . esc_html__( 'Actual revenue retained by your business.', 'edupreneur-pro' ) . '</p>';
 		echo '</div>';
 
 		echo '<div class="edu-card" style="grid-column: span 2;">';
-		echo '<h3>' . esc_html__( 'Student Growth', 'edupreneur-pro' ) . '</h3>';
+		echo '<h3>' . esc_html__( 'Student Enrollment Growth', 'edupreneur-pro' ) . '</h3>';
 		echo '<div style="height: 200px; background: #f9f9f9; border: 1px dashed #ccc; display: flex; align-items: center; justify-content: center;">';
-		echo '<p>' . esc_html__( 'Student growth chart will appear here.', 'edupreneur-pro' ) . '</p>';
+		echo '<p>' . esc_html__( 'Visualizing your student growth trends. Check back as you enroll more learners!', 'edupreneur-pro' ) . '</p>';
 		echo '</div></div>';
 
 		echo '</div></div>';

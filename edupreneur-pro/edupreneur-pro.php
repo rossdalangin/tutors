@@ -79,17 +79,27 @@ final class EdupreneurPro {
 
 		ob_start();
 		echo '<div class="edu-student-dashboard">';
-		echo '<h2>' . esc_html__( 'My Courses', 'edupreneur-pro' ) . '</h2>';
-		echo '<p>' . esc_html__( 'Welcome back! Here are the courses you are currently enrolled in.', 'edupreneur-pro' ) . '</p>';
+		echo '<h2>' . esc_html__( 'My Learning Journey', 'edupreneur-pro' ) . '</h2>';
+		echo '<p>' . esc_html__( 'Welcome back, learner! Continue where you left off and achieve your educational goals.', 'edupreneur-pro' ) . '</p>';
 
 		if ( empty( $courses ) ) {
-			echo '<div class="edu-grid"><div class="edu-card"><p>' . esc_html__( 'No courses found.', 'edupreneur-pro' ) . '</p></div></div>';
+			echo '<div class="edu-grid"><div class="edu-card" style="grid-column: 1/-1;"><p>' . esc_html__( 'You haven\'t enrolled in any courses yet. Explore our catalog to start learning!', 'edupreneur-pro' ) . '</p></div></div>';
 		} else {
 			echo '<div class="edu-grid">';
 			foreach ( $courses as $course ) {
 				echo '<div class="edu-card">';
 				echo '<h3>' . esc_html( $course->title ) . '</h3>';
 				echo '<p>' . esc_html( wp_trim_words( $course->description, 20 ) ) . '</p>';
+
+				$lessons = $wpdb->get_results( $wpdb->prepare( "SELECT id, title FROM {$wpdb->prefix}edu_lessons WHERE course_id = %d ORDER BY order_index ASC", $course->id ) );
+				if ( ! empty( $lessons ) ) {
+					echo '<ul style="margin-top:15px; border-top:1px solid #eee; padding-top:10px;">';
+					foreach ( $lessons as $lesson ) {
+						echo '<li><a href="' . add_query_arg( array( 'edu_lesson' => $lesson->id ), get_permalink() ) . '">' . esc_html( $lesson->title ) . '</a></li>';
+					}
+					echo '</ul>';
+				}
+
 				echo '</div>';
 			}
 			echo '</div>';
@@ -113,6 +123,14 @@ final class EdupreneurPro {
 	public function enqueue_admin_assets( $hook ) {
 		if ( strpos( $hook, 'edu' ) !== false || strpos( $hook, 'edupreneur' ) !== false ) {
 			wp_enqueue_style( 'edu-admin-css', plugin_dir_url( __FILE__ ) . 'assets/css/admin.css', array(), EDUPRENEUR_PRO_VERSION );
+
+			if ( strpos( $hook, 'page_edu-courses' ) !== false ) {
+				wp_enqueue_script( 'edu-course-builder', plugin_dir_url( __FILE__ ) . 'assets/js/course-builder.js', array( 'jquery' ), EDUPRENEUR_PRO_VERSION, true );
+				wp_localize_script( 'edu-course-builder', 'eduApi', array(
+					'root'  => esc_url_raw( rest_url() ),
+					'nonce' => wp_create_nonce( 'wp_rest' ),
+				) );
+			}
 		}
 	}
 

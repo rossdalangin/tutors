@@ -20,6 +20,20 @@ class AffiliateController extends WP_REST_Controller {
 				'permission_callback' => function() { return is_user_logged_in(); },
 			),
 		) );
+
+		register_rest_route( $this->namespace, '/' . $this->rest_base . '/register', array(
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'register_affiliate' ),
+				'permission_callback' => function() { return is_user_logged_in(); },
+			),
+		) );
+	}
+
+	public function register_affiliate( $request ) {
+		$manager = new \EdupreneurPro\Modules\Affiliate\Services\AffiliateManager();
+		$id = $manager->register_affiliate( get_current_user_id() );
+		return new WP_REST_Response( array( 'id' => $id ), 201 );
 	}
 
 	public function get_stats( $request ) {

@@ -7,32 +7,36 @@ class CourseAdmin {
 	}
 	public function register_menu() {
 		add_menu_page( 'EdupreneurPro', 'EdupreneurPro', 'manage_edu_courses', 'edupreneur-pro', array( $this, 'render_dashboard' ), 'dashicons-education', 25 );
-		add_submenu_page( 'edupreneur-pro', 'Courses', 'Courses', 'manage_edu_courses', 'edu-courses', array( $this, 'render_courses_page' ) );
+		add_submenu_page( 'edupreneur-pro', 'Courses', 'Manage Courses', 'manage_edu_courses', 'edu-courses', array( $this, 'render_courses_page' ) );
 	}
 	public function render_dashboard() {
 		echo '<div class="edu-admin-wrap">';
-		echo '<header class="edu-header"><h1>' . esc_html__( 'Welcome to EdupreneurPro', 'edupreneur-pro' ) . '</h1>';
-		echo '<p>' . esc_html__( 'Operate your full-scale education business from a single dashboard.', 'edupreneur-pro' ) . '</p></header>';
+		echo '<header class="edu-header"><h1>' . esc_html__( 'EdupreneurPro Command Center', 'edupreneur-pro' ) . '</h1>';
+		echo '<p>' . esc_html__( 'Empowering you to build, manage, and scale your online education business with ease. Start by exploring your tools below.', 'edupreneur-pro' ) . '</p></header>';
 
 		echo '<div class="edu-grid">';
-		echo '<div class="edu-card"><h3>' . esc_html__( 'Course Builder', 'edupreneur-pro' ) . '</h3>';
-		echo '<p>' . esc_html__( 'Create and manage your courses, modules, and lessons with ease.', 'edupreneur-pro' ) . '</p>';
-		echo '<a href="' . admin_url( 'admin.php?page=edu-courses' ) . '" class="edu-btn">' . esc_html__( 'Manage Courses', 'edupreneur-pro' ) . '</a></div>';
+		echo '<div class="edu-card"><h3>' . esc_html__( 'Course Builder Engine', 'edupreneur-pro' ) . '</h3>';
+		echo '<p>' . esc_html__( 'The heart of your business. Create rich, multi-layered courses with modules and lessons designed to deliver high-impact learning experiences.', 'edupreneur-pro' ) . '</p>';
+		echo '<a href="' . admin_url( 'admin.php?page=edu-courses' ) . '" class="edu-btn">' . esc_html__( 'Launch Course Builder', 'edupreneur-pro' ) . '</a></div>';
 
-		echo '<div class="edu-card"><h3>' . esc_html__( 'Student Engagement', 'edupreneur-pro' ) . '</h3>';
-		echo '<p>' . esc_html__( 'Interact with your community and track student progress.', 'edupreneur-pro' ) . '</p></div>';
+		echo '<div class="edu-card"><h3>' . esc_html__( 'Student Engagement Hub', 'edupreneur-pro' ) . '</h3>';
+		echo '<p>' . esc_html__( 'Monitor student progress in real-time and foster a thriving community. Engaged students lead to better completion rates and higher revenue.', 'edupreneur-pro' ) . '</p></div>';
+
+		echo '<div class="edu-card"><h3>' . esc_html__( 'Monetization & Sales', 'edupreneur-pro' ) . '</h3>';
+		echo '<p>' . esc_html__( 'Track your revenue from Stripe, PayPal, and GCash. Manage your affiliate partners and optimize your sales funnel from a single view.', 'edupreneur-pro' ) . '</p>';
+		echo '<a href="' . admin_url( 'admin.php?page=edu-dashboard' ) . '" class="edu-btn">' . esc_html__( 'View Sales Reports', 'edupreneur-pro' ) . '</a></div>';
 		echo '</div></div>';
 	}
 	public function render_courses_page() {
 		echo '<div class="edu-admin-wrap">';
-		echo '<header class="edu-header"><h1>' . esc_html__( 'Manage Courses', 'edupreneur-pro' ) . '</h1>';
-		echo '<p>' . esc_html__( 'Organize your curriculum using the drag-and-drop course builder.', 'edupreneur-pro' ) . '</p></header>';
+		echo '<header class="edu-header"><h1>' . esc_html__( 'Curriculum Architect', 'edupreneur-pro' ) . '</h1>';
+		echo '<p>' . esc_html__( 'Define your educational path. Here you can create courses and structure them into logical modules and lessons.', 'edupreneur-pro' ) . '</p></header>';
 
-		echo '<div class="edu-guide-section"><h4>' . esc_html__( 'Quick Tip', 'edupreneur-pro' ) . '</h4>';
-		echo '<p>' . esc_html__( 'Start by creating a course, then add modules and lessons to build your curriculum.', 'edupreneur-pro' ) . '</p></div>';
+		echo '<div class="edu-guide-section"><h4>' . esc_html__( 'How to Build Your Course', 'edupreneur-pro' ) . '</h4>';
+		echo '<p>' . esc_html__( '1. Click "Create New Course" to start a new curriculum. 2. Use the "Add Lesson" button on any course card to begin adding educational content. 3. Remember to include descriptions to help your students understand what they will learn.', 'edupreneur-pro' ) . '</p></div>';
 
 		echo '<div id="edu-course-builder-root" class="edu-card">';
-		echo '<p>' . esc_html__( 'Course builder loading...', 'edupreneur-pro' ) . '</p>';
+		echo '<p>' . esc_html__( 'Building your curriculum interface...', 'edupreneur-pro' ) . '</p>';
 		echo '</div></div>';
 	}
 }

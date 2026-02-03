@@ -18,9 +18,19 @@ class Schema {
 				updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 				PRIMARY KEY  (id)
 			) $charset_collate;",
+			"{$prefix}modules" => "CREATE TABLE {$prefix}modules (
+				id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+				course_id bigint(20) UNSIGNED NOT NULL,
+				title varchar(255) NOT NULL,
+				order_index int(11) DEFAULT 0,
+				created_at datetime DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY  (id)
+			) $charset_collate;",
+
 			"{$prefix}lessons" => "CREATE TABLE {$prefix}lessons (
 				id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
 				course_id bigint(20) UNSIGNED NOT NULL,
+				module_id bigint(20) UNSIGNED DEFAULT 0,
 				title varchar(255) NOT NULL,
 				content longtext,
 				lesson_type varchar(50) DEFAULT 'video',
