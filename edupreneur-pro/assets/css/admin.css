@@ -113,10 +113,19 @@
 .edu-drag-handle, .edu-drag-handle-mini { cursor: grab; color: #ced4da; margin-right: 10px; font-size: 18px; transition: color 0.2s; }
 .edu-drag-handle:hover, .edu-drag-handle-mini:hover { color: var(--edu-primary); }
 
+.edu-item-actions, .edu-item-actions-mini { display: inline-flex; gap: 8px; margin-left: 10px; opacity: 0; transition: opacity 0.2s; }
+.edu-course-header:hover .edu-item-actions, .edu-module-header:hover .edu-item-actions-mini, .edu-lesson-item:hover .edu-item-actions-mini { opacity: 1; }
+.edu-item-actions span, .edu-item-actions-mini span { cursor: pointer; font-size: 14px; filter: grayscale(1); transition: filter 0.2s; }
+.edu-item-actions span:hover, .edu-item-actions-mini span:hover { filter: grayscale(0); }
+
 .edu-empty-state { text-align: center; padding: 40px; color: #6c757d; }
 .edu-empty-state i { font-size: 48px; display: block; margin-bottom: 20px; opacity: 0.3; }
 
 .edu-badge { display: inline-block; padding: 0.25em 0.4em; font-size: 75%; font-weight: 700; line-height: 1; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: 0.25rem; background: var(--edu-primary); color: #fff; }
+
+.wp-list-table { margin-top: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 4px; overflow: hidden; }
+.wp-list-table thead th { background: #f9f9f9; padding: 12px; font-weight: 600; }
+.wp-list-table td { padding: 12px; vertical-align: middle; }
 
 .edu-modal { position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; }
 .edu-modal-content { background: #fff; border-radius: 12px; width: 500px; max-width: 90%; box-shadow: 0 15px 35px rgba(0,0,0,0.2); }

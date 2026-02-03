@@ -34,6 +34,14 @@ class DiscussionBoard {
 		return $wpdb->delete( $this->table, array( 'id' => $post_id ) );
 	}
 
+	public function update_post( $post_id, $data ) {
+		global $wpdb;
+		if ( isset( $data['content'] ) ) {
+			$data['content'] = wp_kses_post( $data['content'] );
+		}
+		return $wpdb->update( $this->table, $data, array( 'id' => $post_id ) );
+	}
+
 	public function create_study_group( $course_id, $name, $user_id ) {
 		global $wpdb;
 		return $wpdb->insert( $this->table, array(

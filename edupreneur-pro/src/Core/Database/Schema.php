@@ -117,6 +117,14 @@ class Schema {
 				instructions text,
 				PRIMARY KEY  (id)
 			) $charset_collate;",
+
+			"{$prefix}resources" => "CREATE TABLE {$prefix}resources (
+				id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+				lesson_id bigint(20) UNSIGNED NOT NULL,
+				title varchar(255) NOT NULL,
+				url varchar(255) NOT NULL,
+				PRIMARY KEY  (id)
+			) $charset_collate;",
 		);
 	}
 }

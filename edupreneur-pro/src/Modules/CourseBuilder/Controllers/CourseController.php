@@ -28,6 +28,19 @@ class CourseController extends WP_REST_Controller {
 				'permission_callback' => array( $this, 'check_manage_permission' ),
 			),
 		) );
+
+		register_rest_route( $this->namespace, '/' . $this->rest_base . '/(?P<id>\d+)', array(
+			array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'update_item' ),
+				'permission_callback' => array( $this, 'check_manage_permission' ),
+			),
+			array(
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => array( $this, 'delete_item' ),
+				'permission_callback' => array( $this, 'check_manage_permission' ),
+			),
+		) );
 	}
 
 	public function check_read_permission() { return current_user_can( 'read' ); }
@@ -47,5 +60,22 @@ class CourseController extends WP_REST_Controller {
 		);
 		$id = $this->repository->create( $data );
 		return new WP_REST_Response( array( 'id' => $id ), 201 );
+	}
+
+	public function update_item( $request ) {
+		$id = $request['id'];
+		$data = array();
+		if ( isset( $request['title'] ) ) $data['title'] = sanitize_text_field( $request['title'] );
+		if ( isset( $request['description'] ) ) $data['description'] = wp_kses_post( $request['description'] );
+		if ( isset( $request['price'] ) ) $data['price'] = floatval( $request['price'] );
+
+		$this->repository->update( $id, $data );
+		return new WP_REST_Response( array( 'success' => true ), 200 );
+	}
+
+	public function delete_item( $request ) {
+		$id = $request['id'];
+		$this->repository->delete( $id );
+		return new WP_REST_Response( array( 'success' => true ), 200 );
 	}
 }

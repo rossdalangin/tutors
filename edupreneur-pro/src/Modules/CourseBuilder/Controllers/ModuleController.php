@@ -34,6 +34,19 @@ class ModuleController extends WP_REST_Controller {
 			'callback'            => array( $this, 'reorder_items' ),
 			'permission_callback' => function() { return current_user_can( 'manage_edu_courses' ); },
 		) );
+
+		register_rest_route( $this->namespace, '/' . $this->rest_base . '/(?P<id>\d+)', array(
+			array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'update_item' ),
+				'permission_callback' => function() { return current_user_can( 'manage_edu_courses' ); },
+			),
+			array(
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => array( $this, 'delete_item' ),
+				'permission_callback' => function() { return current_user_can( 'manage_edu_courses' ); },
+			),
+		) );
 	}
 
 	public function reorder_items( $request ) {
@@ -68,5 +81,20 @@ class ModuleController extends WP_REST_Controller {
 		);
 		$id = $this->repository->create( $data );
 		return new WP_REST_Response( array( 'id' => $id ), 201 );
+	}
+
+	public function update_item( $request ) {
+		$id = $request['id'];
+		$data = array();
+		if ( isset( $request['title'] ) ) $data['title'] = sanitize_text_field( $request['title'] );
+
+		$this->repository->update( $id, $data );
+		return new WP_REST_Response( array( 'success' => true ), 200 );
+	}
+
+	public function delete_item( $request ) {
+		$id = $request['id'];
+		$this->repository->delete( $id );
+		return new WP_REST_Response( array( 'success' => true ), 200 );
 	}
 }

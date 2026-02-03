@@ -29,8 +29,23 @@ class SystemService {
 	public static function add_sample_data() {
 		global $wpdb;
 
-		// Clear first to avoid duplicates if desired, or just append
-		// self::clear_database();
+		// Create sample users if they don't exist
+		$users = array(
+			array( 'user_login' => 'tutor_demo', 'user_pass' => 'demo123', 'role' => 'administrator' ),
+			array( 'user_login' => 'student_demo', 'user_pass' => 'demo123', 'role' => 'subscriber' ),
+			array( 'user_login' => 'affiliate_demo', 'user_pass' => 'demo123', 'role' => 'subscriber' )
+		);
+
+		foreach ( $users as $u ) {
+			if ( ! username_exists( $u['user_login'] ) ) {
+				$user_id = wp_create_user( $u['user_login'], $u['user_pass'] );
+				$user = new \WP_User( $user_id );
+				$user->set_role( $u['role'] );
+			}
+		}
+
+		$instructor_id = get_user_by( 'login', 'tutor_demo' )->ID;
+		$student_id = get_user_by( 'login', 'student_demo' )->ID;
 
 		// Add a sample course
 		$wpdb->insert( "{$wpdb->prefix}edu_courses", array(
@@ -38,7 +53,7 @@ class SystemService {
 			'description' => 'A comprehensive guide to building a scalable online business from scratch.',
 			'price'       => 199.99,
 			'status'      => 'published',
-			'instructor_id' => get_current_user_id()
+			'instructor_id' => $instructor_id
 		) );
 		$course_id = $wpdb->insert_id;
 
@@ -65,7 +80,27 @@ class SystemService {
 			}
 		}
 
-		// Add a sample student/enrollment if there are other users,
-		// but let's just stick to courses for now as requested.
+		// Enrollment
+		$wpdb->insert( "{$wpdb->prefix}edu_enrollments", array(
+			'student_id' => $student_id,
+			'course_id'  => $course_id,
+			'status'     => 'active'
+		) );
+
+		// Order
+		$wpdb->insert( "{$wpdb->prefix}edu_orders", array(
+			'user_id'      => $student_id,
+			'total_amount' => 199.99,
+			'status'       => 'completed'
+		) );
+
+		// Affiliate
+		$affiliate_user_id = get_user_by( 'login', 'affiliate_demo' )->ID;
+		$wpdb->insert( "{$wpdb->prefix}edu_affiliates", array(
+			'user_id'         => $affiliate_user_id,
+			'referral_code'   => 'DEMO_REF',
+			'commission_rate' => 15.00,
+			'status'          => 'active'
+		) );
 	}
 }

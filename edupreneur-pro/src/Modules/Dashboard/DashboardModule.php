@@ -45,6 +45,131 @@ class DashboardModule implements ModuleInterface {
 			'edu-settings',
 			array( $this, 'render_settings_page' )
 		);
+
+		add_submenu_page(
+			'edupreneur-pro',
+			__( 'Orders Management', 'edupreneur-pro' ),
+			__( 'Orders', 'edupreneur-pro' ),
+			'manage_options',
+			'edu-orders',
+			array( $this, 'render_orders_page' )
+		);
+
+		add_submenu_page(
+			'edupreneur-pro',
+			__( 'Affiliate Management', 'edupreneur-pro' ),
+			__( 'Affiliates', 'edupreneur-pro' ),
+			'manage_options',
+			'edu-affiliates',
+			array( $this, 'render_affiliates_page' )
+		);
+
+		add_submenu_page(
+			'edupreneur-pro',
+			__( 'Student Management', 'edupreneur-pro' ),
+			__( 'Students', 'edupreneur-pro' ),
+			'manage_options',
+			'edu-students',
+			array( $this, 'render_students_page' )
+		);
+
+		add_submenu_page(
+			'edupreneur-pro',
+			__( 'Community Moderation', 'edupreneur-pro' ),
+			__( 'Community', 'edupreneur-pro' ),
+			'manage_options',
+			'edu-community-mgmt',
+			array( $this, 'render_community_mgmt_page' )
+		);
+	}
+
+	public function render_orders_page() {
+		global $wpdb;
+		if ( isset( $_GET['action'] ) && $_GET['action'] === 'delete' && isset( $_GET['id'] ) ) {
+			check_admin_referer( 'edu_order_action' );
+			$wpdb->delete( "{$wpdb->prefix}edu_orders", array( 'id' => intval( $_GET['id'] ) ) );
+			echo '<div class="updated"><p>Order deleted.</p></div>';
+		}
+		$orders = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}edu_orders ORDER BY created_at DESC" );
+		echo '<div class="edu-admin-wrap"><h1>Order Management</h1><table class="wp-list-table widefat fixed striped">';
+		echo '<thead><tr><th>ID</th><th>User</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+		foreach ( $orders as $order ) {
+			$user = get_userdata( $order->user_id );
+			$delete_url = wp_nonce_url( admin_url( 'admin.php?page=edu-orders&action=delete&id=' . $order->id ), 'edu_order_action' );
+			echo "<tr><td>{$order->id}</td><td>" . ( $user ? $user->display_name : 'Unknown' ) . "</td><td>\${$order->total_amount}</td><td>{$order->status}</td>";
+			echo "<td><a href='{$delete_url}' class='edu-btn' style='background:#dc3545;' onclick='return confirm(\"Delete order?\")'>Delete</a></td></tr>";
+		}
+		echo '</tbody></table></div>';
+	}
+
+	public function render_affiliates_page() {
+		global $wpdb;
+		if ( isset( $_POST['edu_affiliate_id'] ) ) {
+			check_admin_referer( 'edu_affiliate_action' );
+			if ( $_POST['edu_action'] === 'update' ) {
+				$wpdb->update( "{$wpdb->prefix}edu_affiliates", array( 'status' => sanitize_text_field( $_POST['status'] ), 'commission_rate' => floatval( $_POST['rate'] ) ), array( 'id' => intval( $_POST['edu_affiliate_id'] ) ) );
+			} elseif ( $_POST['edu_action'] === 'delete' ) {
+				$wpdb->delete( "{$wpdb->prefix}edu_affiliates", array( 'id' => intval( $_POST['edu_affiliate_id'] ) ) );
+			}
+			echo '<div class="updated"><p>Affiliate updated.</p></div>';
+		}
+		$affiliates = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}edu_affiliates" );
+		echo '<div class="edu-admin-wrap"><h1>Affiliate Management</h1><table class="wp-list-table widefat fixed striped">';
+		echo '<thead><tr><th>User</th><th>Code</th><th>Rate (%)</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+		foreach ( $affiliates as $aff ) {
+			$user = get_userdata( $aff->user_id );
+			echo "<tr><form method='post'><td>" . ( $user ? $user->display_name : 'Unknown' ) . "</td><td>{$aff->referral_code}</td>";
+			echo "<td><input type='number' name='rate' value='{$aff->commission_rate}' style='width:60px;'></td>";
+			echo "<td><select name='status'><option " . selected( $aff->status, 'active', false ) . ">active</option><option " . selected( $aff->status, 'pending', false ) . ">pending</option></select></td>";
+			echo "<td>" . wp_nonce_field( 'edu_affiliate_action', '_wpnonce', true, false );
+			echo "<input type='hidden' name='edu_affiliate_id' value='{$aff->id}'>";
+			echo "<button type='submit' name='edu_action' value='update' class='edu-btn'>Save</button> ";
+			echo "<button type='submit' name='edu_action' value='delete' class='edu-btn' style='background:#dc3545;' onclick='return confirm(\"Delete affiliate?\")'>Delete</button></td></form></tr>";
+		}
+		echo '</tbody></table></div>';
+	}
+
+	public function render_community_mgmt_page() {
+		global $wpdb;
+		if ( isset( $_GET['action'] ) && isset( $_GET['id'] ) ) {
+			check_admin_referer( 'edu_comm_action' );
+			if ( $_GET['action'] === 'delete' ) {
+				$wpdb->delete( "{$wpdb->prefix}edu_community_posts", array( 'id' => intval( $_GET['id'] ) ) );
+			} elseif ( $_GET['action'] === 'pin' ) {
+				$wpdb->update( "{$wpdb->prefix}edu_community_posts", array( 'is_pinned' => 1 ), array( 'id' => intval( $_GET['id'] ) ) );
+			}
+			echo '<div class="updated"><p>Action completed.</p></div>';
+		}
+		$posts = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}edu_community_posts ORDER BY created_at DESC" );
+		echo '<div class="edu-admin-wrap"><h1>Community Moderation</h1><table class="wp-list-table widefat fixed striped">';
+		echo '<thead><tr><th>User</th><th>Content</th><th>Pinned</th><th>Actions</th></tr></thead><tbody>';
+		foreach ( $posts as $post ) {
+			$user = get_userdata( $post->user_id );
+			$delete_url = wp_nonce_url( admin_url( 'admin.php?page=edu-community-mgmt&action=delete&id=' . $post->id ), 'edu_comm_action' );
+			$pin_url = wp_nonce_url( admin_url( 'admin.php?page=edu-community-mgmt&action=pin&id=' . $post->id ), 'edu_comm_action' );
+			echo "<tr><td>" . ( $user ? $user->display_name : 'Unknown' ) . "</td><td>" . esc_html( wp_trim_words( $post->content, 10 ) ) . "</td><td>" . ( $post->is_pinned ? 'Yes' : 'No' ) . "</td>";
+			echo "<td><a href='{$pin_url}' class='edu-btn'>Pin</a> <a href='{$delete_url}' class='edu-btn' style='background:#dc3545;' onclick='return confirm(\"Delete post?\")'>Delete</a></td></tr>";
+		}
+		echo '</tbody></table></div>';
+	}
+
+	public function render_students_page() {
+		global $wpdb;
+		if ( isset( $_GET['action'] ) && $_GET['action'] === 'delete_enroll' && isset( $_GET['id'] ) ) {
+			check_admin_referer( 'edu_student_action' );
+			$wpdb->delete( "{$wpdb->prefix}edu_enrollments", array( 'id' => intval( $_GET['id'] ) ) );
+			echo '<div class="updated"><p>Enrollment removed.</p></div>';
+		}
+		$enrollments = $wpdb->get_results( "SELECT e.*, c.title as course_title FROM {$wpdb->prefix}edu_enrollments e JOIN {$wpdb->prefix}edu_courses c ON e.course_id = c.id" );
+		echo '<div class="edu-admin-wrap"><h1>Student Enrollments</h1><table class="wp-list-table widefat fixed striped">';
+		echo '<thead><tr><th>Student</th><th>Course</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+		foreach ( $enrollments as $en ) {
+			$user = get_userdata( $en->student_id );
+			$delete_url = wp_nonce_url( admin_url( 'admin.php?page=edu-students&action=delete_enroll&id=' . $en->id ), 'edu_student_action' );
+			echo "<tr><td>" . ( $user ? $user->display_name : 'Unknown' ) . "</td><td>{$en->course_title}</td><td>{$en->enrolled_at}</td><td>{$en->status}</td>";
+			echo "<td><a href='{$delete_url}' class='edu-btn' style='background:#dc3545;' onclick='return confirm(\"Remove student from course?\")'>Unenroll</a></td></tr>";
+		}
+		echo '</tbody></table></div>';
 	}
 
 	public function render_settings_page() {
@@ -55,6 +180,10 @@ class DashboardModule implements ModuleInterface {
 			} elseif ( $_POST['edu_action'] === 'sample_data' ) {
 				\EdupreneurPro\Core\SystemService::add_sample_data();
 				echo '<div class="updated"><p>Sample data injected successfully.</p></div>';
+			} elseif ( $_POST['edu_action'] === 'save_keys' ) {
+				update_option( 'edu_stripe_key', sanitize_text_field( $_POST['stripe_key'] ) );
+				update_option( 'edu_paypal_email', sanitize_email( $_POST['paypal_email'] ) );
+				echo '<div class="updated"><p>Keys saved.</p></div>';
 			}
 		}
 
@@ -72,8 +201,13 @@ class DashboardModule implements ModuleInterface {
 		echo '<button type="submit" name="edu_action" value="clear_db" class="edu-btn" style="background:#dc3545;" onclick="return confirm(\'Are you sure? This will delete all courses and students.\')">' . esc_html__( 'Reset Database', 'edupreneur-pro' ) . '</button>';
 		echo '</form></div>';
 
-		echo '<div class="edu-card"><h3>' . esc_html__( 'General Configuration', 'edupreneur-pro' ) . '</h3>';
-		echo '<p>' . esc_html__( 'Platform settings like currency, timezone, and student registration defaults will be available here in the next update.', 'edupreneur-pro' ) . '</p></div>';
+		echo '<div class="edu-card"><h3>' . esc_html__( 'Payment Gateway Keys', 'edupreneur-pro' ) . '</h3>';
+		echo '<form method="post" style="margin-top:20px;">';
+		wp_nonce_field( 'edu_system_action' );
+		echo '<div class="edu-form-group"><label>Stripe Secret Key</label><input type="password" name="stripe_key" value="' . esc_attr( get_option( 'edu_stripe_key' ) ) . '"></div>';
+		echo '<div class="edu-form-group"><label>PayPal Business Email</label><input type="email" name="paypal_email" value="' . esc_attr( get_option( 'edu_paypal_email' ) ) . '"></div>';
+		echo '<button type="submit" name="edu_action" value="save_keys" class="edu-btn">' . esc_html__( 'Save API Keys', 'edupreneur-pro' ) . '</button>';
+		echo '</form></div>';
 		echo '</div></div>';
 	}
 

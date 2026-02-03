@@ -19,6 +19,9 @@ class PaymentModule implements ModuleInterface {
 	public function register_routes() {
 		$controller = new PaymentController();
 		$controller->register_routes();
+
+		$order_controller = new \EdupreneurPro\Modules\Payments\Controllers\OrderController();
+		$order_controller->register_routes();
 	}
 	public function get_id() { return 'payments'; }
 }

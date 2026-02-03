@@ -34,6 +34,24 @@ class LessonController extends WP_REST_Controller {
 			'callback'            => array( $this, 'reorder_items' ),
 			'permission_callback' => function() { return current_user_can( 'manage_edu_lessons' ); },
 		) );
+
+		register_rest_route( $this->namespace, '/' . $this->rest_base . '/(?P<id>\d+)', array(
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_item' ),
+				'permission_callback' => function() { return current_user_can( 'read' ); },
+			),
+			array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'update_item' ),
+				'permission_callback' => function() { return current_user_can( 'manage_edu_lessons' ); },
+			),
+			array(
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => array( $this, 'delete_item' ),
+				'permission_callback' => function() { return current_user_can( 'manage_edu_lessons' ); },
+			),
+		) );
 	}
 
 	public function reorder_items( $request ) {
@@ -71,10 +89,84 @@ class LessonController extends WP_REST_Controller {
 			'module_id' => intval( $request['module_id'] ),
 			'title'     => sanitize_text_field( $request['title'] ),
 			'content'   => wp_kses_post( $request['description'] ),
-			'video_url' => esc_url_raw( $request['video_url'] ),
-			'drip_days' => intval( $request['drip_days'] ),
+			'video_url'   => esc_url_raw( $request['video_url'] ),
+			'drip_days'   => intval( $request['drip_days'] ),
+			'lesson_type' => sanitize_text_field( $request['lesson_type'] ),
 		);
 		$id = $this->repository->create( $data );
+
+		if ( isset( $request['resources'] ) && is_array( $request['resources'] ) ) {
+			global $wpdb;
+			foreach ( $request['resources'] as $res ) {
+				$wpdb->insert( "{$wpdb->prefix}edu_resources", array(
+					'lesson_id' => $id,
+					'title'     => sanitize_text_field( $res['title'] ),
+					'url'       => esc_url_raw( $res['url'] )
+				) );
+			}
+		}
+
 		return new WP_REST_Response( array( 'id' => $id ), 201 );
+	}
+
+	public function get_item( $request ) {
+		$id = $request['id'];
+		$lesson = $this->repository->find( $id );
+		if ( $lesson ) {
+			global $wpdb;
+			$lesson->resources = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}edu_resources WHERE lesson_id = %d", $id ) );
+			$lesson->quiz = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}edu_quizzes WHERE lesson_id = %d", $id ) );
+			$lesson->assignment = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}edu_assignments WHERE lesson_id = %d", $id ) );
+		}
+		return new WP_REST_Response( $lesson, 200 );
+	}
+
+	public function update_item( $request ) {
+		$id = $request['id'];
+		$data = array();
+		if ( isset( $request['title'] ) ) $data['title'] = sanitize_text_field( $request['title'] );
+		if ( isset( $request['description'] ) ) $data['content'] = wp_kses_post( $request['description'] );
+		if ( isset( $request['video_url'] ) ) $data['video_url'] = esc_url_raw( $request['video_url'] );
+		if ( isset( $request['drip_days'] ) ) $data['drip_days'] = intval( $request['drip_days'] );
+		if ( isset( $request['lesson_type'] ) ) $data['lesson_type'] = sanitize_text_field( $request['lesson_type'] );
+
+		$this->repository->update( $id, $data );
+
+		global $wpdb;
+		if ( isset( $request['quiz_data'] ) ) {
+			$wpdb->replace( "{$wpdb->prefix}edu_quizzes", array(
+				'lesson_id' => $id,
+				'title'     => 'Quiz for ' . $data['title'],
+				'questions' => sanitize_textarea_field( $request['quiz_data'] )
+			) );
+		}
+
+		if ( isset( $request['assignment_data'] ) ) {
+			$wpdb->replace( "{$wpdb->prefix}edu_assignments", array(
+				'lesson_id'    => $id,
+				'title'        => 'Assignment for ' . $data['title'],
+				'instructions' => sanitize_textarea_field( $request['assignment_data'] )
+			) );
+		}
+
+		if ( isset( $request['resources'] ) && is_array( $request['resources'] ) ) {
+			global $wpdb;
+			$wpdb->delete( "{$wpdb->prefix}edu_resources", array( 'lesson_id' => $id ) );
+			foreach ( $request['resources'] as $res ) {
+				$wpdb->insert( "{$wpdb->prefix}edu_resources", array(
+					'lesson_id' => $id,
+					'title'     => sanitize_text_field( $res['title'] ),
+					'url'       => esc_url_raw( $res['url'] )
+				) );
+			}
+		}
+
+		return new WP_REST_Response( array( 'success' => true ), 200 );
+	}
+
+	public function delete_item( $request ) {
+		$id = $request['id'];
+		$this->repository->delete( $id );
+		return new WP_REST_Response( array( 'success' => true ), 200 );
 	}
 }

@@ -48,6 +48,8 @@ final class EdupreneurPro {
 		add_action( 'init', array( $this, 'track_affiliate_referral' ) );
 		add_action( 'admin_init', array( $this, 'ensure_admin_capabilities' ) );
 		add_shortcode( 'edu_student_dashboard', array( $this, 'render_student_dashboard' ) );
+		add_filter( 'the_content', array( $this, 'handle_lesson_display' ) );
+		add_action( 'template_redirect', array( $this, 'handle_lesson_completion' ) );
 		register_activation_hook( __FILE__, array( $this, 'activate' ) );
 	}
 
@@ -63,6 +65,74 @@ final class EdupreneurPro {
 	/**
 	 * Render student dashboard shortcode.
 	 */
+	public function handle_lesson_completion() {
+		if ( isset( $_POST['lesson_to_complete'] ) && check_admin_referer( 'edu_complete_lesson' ) ) {
+			$lesson_id = intval( $_POST['lesson_to_complete'] );
+			$progress = new \EdupreneurPro\Modules\CourseBuilder\Services\ProgressService();
+			$progress->mark_lesson_complete( get_current_user_id(), $lesson_id );
+
+			wp_safe_redirect( add_query_arg( array( 'edu_lesson' => $lesson_id, 'completed' => 1 ), wp_get_referer() ) );
+			exit;
+		}
+	}
+
+	public function handle_lesson_display( $content ) {
+		if ( ! isset( $_GET['edu_lesson'] ) ) {
+			return $content;
+		}
+
+		$lesson_id = intval( $_GET['edu_lesson'] );
+		global $wpdb;
+		$lesson = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}edu_lessons WHERE id = %d", $lesson_id ) );
+
+		if ( ! $lesson ) {
+			return $content;
+		}
+
+		// Authorization check
+		if ( ! current_user_can( 'read' ) ) {
+			return '<p>' . esc_html__( 'Please log in to access this lesson.', 'edupreneur-pro' ) . '</p>';
+		}
+
+		// Progress Service Check (Drip)
+		$progress = new \EdupreneurPro\Modules\CourseBuilder\Services\ProgressService();
+		if ( ! $progress->can_access_lesson( get_current_user_id(), $lesson_id ) ) {
+			return '<div class="edu-card edu-warning"><h3>' . esc_html__( 'Lesson Locked', 'edupreneur-pro' ) . '</h3><p>' . esc_html__( 'This lesson is not yet available based on your enrollment drip schedule.', 'edupreneur-pro' ) . '</p></div>';
+		}
+
+		ob_start();
+		echo '<div class="edu-lesson-player">';
+		echo '<a href="' . get_permalink() . '" class="edu-btn edu-btn-small" style="margin-bottom:20px;">' . esc_html__( '← Back to Dashboard', 'edupreneur-pro' ) . '</a>';
+		echo '<h1>' . esc_html( $lesson->title ) . '</h1>';
+
+		if ( ! empty( $lesson->video_url ) ) {
+			echo '<div class="edu-video-container" style="margin: 20px 0; background: #000; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; color: #fff;">';
+			echo '<p>Video Player: ' . esc_url( $lesson->video_url ) . '</p>';
+			echo '</div>';
+		}
+
+		echo '<div class="edu-lesson-content">' . wpautop( $lesson->content ) . '</div>';
+
+		$resources = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}edu_resources WHERE lesson_id = %d", $lesson_id ) );
+		if ( ! empty( $resources ) ) {
+			echo '<div class="edu-card" style="margin-top:30px;"><h3>' . esc_html__( 'Learning Resources', 'edupreneur-pro' ) . '</h3><ul>';
+			foreach ( $resources as $res ) {
+				echo '<li><a href="' . esc_url( $res->url ) . '" target="_blank">' . esc_html( $res->title ) . '</a></li>';
+			}
+			echo '</ul></div>';
+		}
+
+		// Mark as complete button
+		echo '<form method="post" style="margin-top:30px;">';
+		wp_nonce_field( 'edu_complete_lesson' );
+		echo '<input type="hidden" name="lesson_to_complete" value="' . $lesson_id . '">';
+		echo '<button type="submit" class="edu-btn">' . esc_html__( 'Mark as Completed', 'edupreneur-pro' ) . '</button>';
+		echo '</form>';
+
+		echo '</div>';
+		return ob_get_clean();
+	}
+
 	public function render_student_dashboard() {
 		if ( ! is_user_logged_in() ) {
 			return '<p>' . esc_html__( 'Please log in to view your courses.', 'edupreneur-pro' ) . '</p>';

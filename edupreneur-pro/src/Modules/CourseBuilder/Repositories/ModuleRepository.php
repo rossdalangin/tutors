@@ -15,4 +15,14 @@ class ModuleRepository {
 		global $wpdb;
 		return $wpdb->insert( $this->table, $data ) ? $wpdb->insert_id : false;
 	}
+
+	public function update( $id, $data ) {
+		global $wpdb;
+		return $wpdb->update( $this->table, $data, array( 'id' => $id ) );
+	}
+
+	public function delete( $id ) {
+		global $wpdb;
+		return $wpdb->delete( $this->table, array( 'id' => $id ) );
+	}
 }
