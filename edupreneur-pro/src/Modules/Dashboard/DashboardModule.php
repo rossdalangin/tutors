@@ -36,6 +36,45 @@ class DashboardModule implements ModuleInterface {
 			'edu-help',
 			array( $this, 'render_help_page' )
 		);
+
+		add_submenu_page(
+			'edupreneur-pro',
+			__( 'System Settings', 'edupreneur-pro' ),
+			__( 'Settings & Tools', 'edupreneur-pro' ),
+			'manage_options',
+			'edu-settings',
+			array( $this, 'render_settings_page' )
+		);
+	}
+
+	public function render_settings_page() {
+		if ( isset( $_POST['edu_action'] ) && check_admin_referer( 'edu_system_action' ) ) {
+			if ( $_POST['edu_action'] === 'clear_db' ) {
+				\EdupreneurPro\Core\SystemService::clear_database();
+				echo '<div class="updated"><p>Database cleared successfully.</p></div>';
+			} elseif ( $_POST['edu_action'] === 'sample_data' ) {
+				\EdupreneurPro\Core\SystemService::add_sample_data();
+				echo '<div class="updated"><p>Sample data injected successfully.</p></div>';
+			}
+		}
+
+		echo '<div class="edu-admin-wrap">';
+		echo '<header class="edu-header"><h1>' . esc_html__( 'System Settings & Tools', 'edupreneur-pro' ) . '</h1>';
+		echo '<p>' . esc_html__( 'Manage your platform defaults and use development tools.', 'edupreneur-pro' ) . '</p></header>';
+
+		echo '<div class="edu-grid">';
+		echo '<div class="edu-card"><h3>' . esc_html__( 'Platform Maintenance', 'edupreneur-pro' ) . '</h3>';
+		echo '<p>' . esc_html__( 'Use these tools to manage your database state. Warning: Clearing the database is irreversible.', 'edupreneur-pro' ) . '</p>';
+
+		echo '<form method="post" style="margin-top:20px; display:flex; gap:10px;">';
+		wp_nonce_field( 'edu_system_action' );
+		echo '<button type="submit" name="edu_action" value="sample_data" class="edu-btn">' . esc_html__( 'Load Sample Data', 'edupreneur-pro' ) . '</button>';
+		echo '<button type="submit" name="edu_action" value="clear_db" class="edu-btn" style="background:#dc3545;" onclick="return confirm(\'Are you sure? This will delete all courses and students.\')">' . esc_html__( 'Reset Database', 'edupreneur-pro' ) . '</button>';
+		echo '</form></div>';
+
+		echo '<div class="edu-card"><h3>' . esc_html__( 'General Configuration', 'edupreneur-pro' ) . '</h3>';
+		echo '<p>' . esc_html__( 'Platform settings like currency, timezone, and student registration defaults will be available here in the next update.', 'edupreneur-pro' ) . '</p></div>';
+		echo '</div></div>';
 	}
 
 	public function render_help_page() {

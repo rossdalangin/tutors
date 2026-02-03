@@ -10,9 +10,10 @@ class Messaging {
 	public function send_message( $sender_id, $receiver_id, $content ) {
 		global $wpdb;
 		$inserted = $wpdb->insert( $this->table, array(
-			'user_id'   => $sender_id,
-			'course_id' => 0,
-			'content'   => $content,
+			'user_id'      => $sender_id,
+			'recipient_id' => $receiver_id,
+			'course_id'    => 0,
+			'content'      => wp_kses_post( $content ),
 		) );
 		if ( $inserted ) {
 			return $wpdb->insert_id;

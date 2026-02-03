@@ -91,13 +91,32 @@ final class EdupreneurPro {
 				echo '<h3>' . esc_html( $course->title ) . '</h3>';
 				echo '<p>' . esc_html( wp_trim_words( $course->description, 20 ) ) . '</p>';
 
-				$lessons = $wpdb->get_results( $wpdb->prepare( "SELECT id, title FROM {$wpdb->prefix}edu_lessons WHERE course_id = %d ORDER BY order_index ASC", $course->id ) );
-				if ( ! empty( $lessons ) ) {
-					echo '<ul style="margin-top:15px; border-top:1px solid #eee; padding-top:10px;">';
-					foreach ( $lessons as $lesson ) {
-						echo '<li><a href="' . add_query_arg( array( 'edu_lesson' => $lesson->id ), get_permalink() ) . '">' . esc_html( $lesson->title ) . '</a></li>';
+				$modules = $wpdb->get_results( $wpdb->prepare( "SELECT id, title FROM {$wpdb->prefix}edu_modules WHERE course_id = %d ORDER BY order_index ASC", $course->id ) );
+
+				if ( ! empty( $modules ) ) {
+					foreach ( $modules as $module ) {
+						echo '<div class="edu-module-summary" style="margin-top:10px;">';
+						echo '<strong style="font-size: 0.9em; color: #666;">' . esc_html( $module->title ) . '</strong>';
+						$lessons = $wpdb->get_results( $wpdb->prepare( "SELECT id, title FROM {$wpdb->prefix}edu_lessons WHERE module_id = %d ORDER BY order_index ASC", $module->id ) );
+						if ( ! empty( $lessons ) ) {
+							echo '<ul style="margin-left:15px; margin-bottom:10px;">';
+							foreach ( $lessons as $lesson ) {
+								echo '<li><a href="' . add_query_arg( array( 'edu_lesson' => $lesson->id ), get_permalink() ) . '" style="font-size: 0.9em;">' . esc_html( $lesson->title ) . '</a></li>';
+							}
+							echo '</ul>';
+						}
+						echo '</div>';
 					}
-					echo '</ul>';
+				} else {
+					// Fallback to flat list of lessons if no modules
+					$lessons = $wpdb->get_results( $wpdb->prepare( "SELECT id, title FROM {$wpdb->prefix}edu_lessons WHERE course_id = %d ORDER BY order_index ASC", $course->id ) );
+					if ( ! empty( $lessons ) ) {
+						echo '<ul style="margin-top:15px; border-top:1px solid #eee; padding-top:10px;">';
+						foreach ( $lessons as $lesson ) {
+							echo '<li><a href="' . add_query_arg( array( 'edu_lesson' => $lesson->id ), get_permalink() ) . '">' . esc_html( $lesson->title ) . '</a></li>';
+						}
+						echo '</ul>';
+					}
 				}
 
 				echo '</div>';
@@ -125,7 +144,8 @@ final class EdupreneurPro {
 			wp_enqueue_style( 'edu-admin-css', plugin_dir_url( __FILE__ ) . 'assets/css/admin.css', array(), EDUPRENEUR_PRO_VERSION );
 
 			if ( strpos( $hook, 'page_edu-courses' ) !== false ) {
-				wp_enqueue_script( 'edu-course-builder', plugin_dir_url( __FILE__ ) . 'assets/js/course-builder.js', array( 'jquery' ), EDUPRENEUR_PRO_VERSION, true );
+				wp_enqueue_script( 'jquery-ui-sortable' );
+				wp_enqueue_script( 'edu-course-builder', plugin_dir_url( __FILE__ ) . 'assets/js/course-builder.js', array( 'jquery', 'jquery-ui-sortable' ), EDUPRENEUR_PRO_VERSION, true );
 				wp_localize_script( 'edu-course-builder', 'eduApi', array(
 					'root'  => esc_url_raw( rest_url() ),
 					'nonce' => wp_create_nonce( 'wp_rest' ),

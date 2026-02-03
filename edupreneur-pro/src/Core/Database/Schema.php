@@ -34,6 +34,8 @@ class Schema {
 				title varchar(255) NOT NULL,
 				content longtext,
 				lesson_type varchar(50) DEFAULT 'video',
+				video_url varchar(255) DEFAULT '',
+				drip_days int(11) DEFAULT 0,
 				order_index int(11) DEFAULT 0,
 				created_at datetime DEFAULT CURRENT_TIMESTAMP,
 				PRIMARY KEY  (id)
@@ -92,6 +94,7 @@ class Schema {
 				id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
 				course_id bigint(20) UNSIGNED DEFAULT 0,
 				user_id bigint(20) UNSIGNED NOT NULL,
+				recipient_id bigint(20) UNSIGNED DEFAULT 0,
 				parent_id bigint(20) UNSIGNED DEFAULT 0,
 				content text NOT NULL,
 				is_pinned tinyint(1) DEFAULT 0,

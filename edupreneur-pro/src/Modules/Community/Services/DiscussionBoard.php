@@ -23,4 +23,14 @@ class DiscussionBoard {
 
 		return $wpdb->insert( $this->table, $data );
 	}
+
+	public function pin_post( $post_id ) {
+		global $wpdb;
+		return $wpdb->update( $this->table, array( 'is_pinned' => 1 ), array( 'id' => $post_id ) );
+	}
+
+	public function delete_post( $post_id ) {
+		global $wpdb;
+		return $wpdb->delete( $this->table, array( 'id' => $post_id ) );
+	}
 }

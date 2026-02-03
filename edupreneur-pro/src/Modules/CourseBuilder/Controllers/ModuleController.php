@@ -28,6 +28,32 @@ class ModuleController extends WP_REST_Controller {
 				'permission_callback' => function() { return current_user_can( 'manage_edu_courses' ); },
 			),
 		) );
+
+		register_rest_route( $this->namespace, '/' . $this->rest_base . '/reorder', array(
+			'methods'             => WP_REST_Server::EDITABLE,
+			'callback'            => array( $this, 'reorder_items' ),
+			'permission_callback' => function() { return current_user_can( 'manage_edu_courses' ); },
+		) );
+	}
+
+	public function reorder_items( $request ) {
+		$ids = $request->get_param( 'ids' );
+		if ( ! is_array( $ids ) ) {
+			return new \WP_Error( 'invalid_data', 'Expected array of IDs', array( 'status' => 400 ) );
+		}
+
+		global $wpdb;
+		foreach ( $ids as $index => $id ) {
+			$wpdb->update(
+				"{$wpdb->prefix}edu_modules",
+				array( 'order_index' => $index ),
+				array( 'id' => intval( $id ) ),
+				array( '%d' ),
+				array( '%d' )
+			);
+		}
+
+		return new WP_REST_Response( array( 'success' => true ), 200 );
 	}
 
 	public function get_items( $request ) {
