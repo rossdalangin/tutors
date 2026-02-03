@@ -61,6 +61,7 @@ class Roles {
 			$student->add_cap( 'view_edu_courses' );
 			$student->add_cap( 'view_edu_community' );
 			$student->add_cap( 'view_edu_orders' );
+			$student->add_cap( 'view_edu_affiliate_dashboard' );
 		}
 
 		$affiliate = get_role( 'affiliate' );

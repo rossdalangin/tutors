@@ -10,6 +10,7 @@ class Schema {
 				id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
 				title varchar(255) NOT NULL,
 				slug varchar(255) NOT NULL,
+				category varchar(100) DEFAULT 'General',
 				description longtext,
 				instructor_id bigint(20) UNSIGNED NOT NULL,
 				price decimal(10,2) DEFAULT '0.00',

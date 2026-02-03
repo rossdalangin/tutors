@@ -54,6 +54,7 @@ class CourseController extends WP_REST_Controller {
 		$data = array(
 			'title'         => sanitize_text_field( $request['title'] ),
 			'description'   => wp_kses_post( $request['description'] ),
+			'category'      => sanitize_text_field( $request['category'] ),
 			'slug'          => sanitize_title( $request['title'] ),
 			'instructor_id' => get_current_user_id(),
 			'status'        => 'publish',
@@ -67,6 +68,7 @@ class CourseController extends WP_REST_Controller {
 		$data = array();
 		if ( isset( $request['title'] ) ) $data['title'] = sanitize_text_field( $request['title'] );
 		if ( isset( $request['description'] ) ) $data['description'] = wp_kses_post( $request['description'] );
+		if ( isset( $request['category'] ) ) $data['category'] = sanitize_text_field( $request['category'] );
 		if ( isset( $request['price'] ) ) $data['price'] = floatval( $request['price'] );
 
 		$this->repository->update( $id, $data );

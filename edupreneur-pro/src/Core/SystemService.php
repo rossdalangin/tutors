@@ -54,6 +54,7 @@ class SystemService {
 		$wpdb->insert( "{$wpdb->prefix}edu_courses", array(
 			'title'       => 'Mastering Digital Entrepreneurship',
 			'description' => 'A comprehensive guide to building a scalable online business from scratch.',
+			'category'    => 'Business',
 			'price'       => 199.99,
 			'status'      => 'published',
 			'instructor_id' => $instructor_id

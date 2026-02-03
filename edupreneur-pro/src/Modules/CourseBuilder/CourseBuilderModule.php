@@ -18,6 +18,9 @@ class CourseBuilderModule implements ModuleInterface {
 	}
 
 	public function init() {
+		$shortcodes = new \EdupreneurPro\Modules\CourseBuilder\Services\ShortcodeService();
+		$shortcodes->init();
+
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
 
 		if ( is_admin() ) {

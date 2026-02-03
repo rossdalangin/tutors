@@ -33,3 +33,13 @@ You can manage them under **EdupreneurPro → Affiliates**, where you can adjust
 ## 6. Community Engagement
 Every course comes with a built-in discussion board. Students can post questions and tutors can pin important announcements.
 Direct messaging is supported for private 1-on-1 support.
+
+## 7. Shortcodes Reference
+Use these shortcodes to build your sales pages and student portals:
+
+- `[edu_homepage]`: The best landing page to showcase all your featured courses and categories.
+- `[edu_recent_courses]`: Displays a grid of the 10 most recently published courses.
+- `[edu_categories]`: Displays all course categories with links to their respective lists.
+- `[edu_course id="123"]`: Displays a specific course card (replace 123 with your course ID).
+- `[edu_student_dashboard]`: The primary learning portal for logged-in students to see their progress.
+- `[edu_checkout]`: Place this on a "Checkout" page to handle simulated course purchases.

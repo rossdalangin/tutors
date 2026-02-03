@@ -10,6 +10,8 @@ class CourseAdmin {
 		add_submenu_page( 'edupreneur-pro', 'Courses', 'Manage Courses', 'manage_edu_courses', 'edu-courses', array( $this, 'render_courses_page' ) );
 	}
 	public function render_dashboard() {
+		$container = \EdupreneurPro::instance()->container;
+
 		if ( current_user_can( 'manage_edu_courses' ) ) {
 			echo '<div class="edu-admin-wrap">';
 			echo '<header class="edu-header"><h1>' . esc_html__( 'EdupreneurPro Command Center', 'edupreneur-pro' ) . '</h1>';
@@ -28,21 +30,21 @@ class CourseAdmin {
 			echo '<a href="' . admin_url( 'admin.php?page=edu-dashboard' ) . '" class="edu-btn">' . esc_html__( 'View Sales Reports', 'edupreneur-pro' ) . '</a></div>';
 			echo '</div></div>';
 		} elseif ( current_user_can( 'view_edu_affiliate_dashboard' ) ) {
-			$aff_module = \EdupreneurPro::instance()->container->get( 'module_affiliate' );
+			$aff_module = $container->get( 'module_affiliate' );
 			if ( $aff_module ) {
 				echo '<div class="edu-admin-wrap"><header class="edu-header"><h1>' . esc_html__( 'Partner Portal', 'edupreneur-pro' ) . '</h1>';
 				echo '<p>' . esc_html__( 'Welcome back! Here is a summary of your performance and tools.', 'edupreneur-pro' ) . '</p></header></div>';
 				$aff_module->render_affiliate_dashboard();
 			}
 		} elseif ( current_user_can( 'view_edu_courses' ) ) {
-			$dash_module = \EdupreneurPro::instance()->container->get( 'module_dashboard' );
+			$dash_module = $container->get( 'module_dashboard' );
 			if ( $dash_module ) {
 				echo '<div class="edu-admin-wrap"><header class="edu-header"><h1>' . esc_html__( 'Student Learning Center', 'edupreneur-pro' ) . '</h1>';
 				echo '<p>' . esc_html__( 'Welcome back to your dashboard. Continue your educational journey below.', 'edupreneur-pro' ) . '</p></header></div>';
 				$dash_module->render_my_courses_page();
 			}
 		} else {
-			$dash_module = \EdupreneurPro\instance()->container->get( 'module_dashboard' );
+			$dash_module = $container->get( 'module_dashboard' );
 			if ( $dash_module ) {
 				$dash_module->render_help_page();
 			}

@@ -47,6 +47,10 @@
                                 <label>Title</label>
                                 <input type="text" id="entity-title" placeholder="Enter title...">
                             </div>
+                            <div class="edu-form-group" id="course-category-group" style="display:none;">
+                                <label>Category</label>
+                                <input type="text" id="course-category" placeholder="e.g. Marketing, Business...">
+                            </div>
                             <div class="edu-form-group" id="desc-group">
                                 <label>Description</label>
                                 <textarea id="entity-desc" placeholder="Describe the learning objective..."></textarea>
@@ -181,13 +185,16 @@
             if (type === 'lesson') {
                 $('#lesson-settings').show();
                 $('#desc-group').show();
+                $('#course-category-group').hide();
                 this.toggleLessonExtraFields();
             } else if (type === 'module') {
                 $('#lesson-settings').hide();
                 $('#desc-group').hide();
+                $('#course-category-group').hide();
             } else {
                 $('#lesson-settings').hide();
                 $('#desc-group').show();
+                $('#course-category-group').show();
             }
             $('#edu-builder-modal').show();
         },
@@ -203,6 +210,9 @@
                     self.openModal(type, id);
                     $('#entity-title').val(data.title || data.name);
                     $('#entity-desc').val(data.description || data.content);
+                    if (type === 'course') {
+                        $('#course-category').val(data.category || 'General');
+                    }
                     if (type === 'lesson') {
                         $('#lesson-type').val(data.lesson_type || 'video');
                         $('#lesson-video').val(data.video_url || '');
@@ -361,6 +371,7 @@
             if (id && id != 0) url += '/' + id;
 
             let data = { title: title, description: desc };
+            if (type === 'course') data.category = $('#course-category').val();
             if (type === 'module' && (!id || id == 0)) data.course_id = parentId;
             if (type === 'lesson') {
                 if (!id || id == 0) {

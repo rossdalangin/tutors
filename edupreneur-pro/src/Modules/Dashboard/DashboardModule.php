@@ -149,6 +149,12 @@ class DashboardModule implements ModuleInterface {
 			}
 			echo '<div class="updated"><p>Affiliate updated.</p></div>';
 		}
+		if ( isset( $_GET['comm_action'] ) && $_GET['comm_action'] === 'mark_paid' && isset( $_GET['id'] ) ) {
+			check_admin_referer( 'edu_comm_pay_action' );
+			$wpdb->update( "{$wpdb->prefix}edu_commissions", array( 'status' => 'paid' ), array( 'id' => intval( $_GET['id'] ) ) );
+			echo '<div class="updated"><p>Commission marked as paid.</p></div>';
+		}
+
 		$affiliates = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}edu_affiliates" );
 		echo '<div class="edu-admin-wrap"><h1>Affiliate Management</h1><table class="wp-list-table widefat fixed striped">';
 		echo '<thead><tr><th>User</th><th>Code</th><th>Rate (%)</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
@@ -161,6 +167,16 @@ class DashboardModule implements ModuleInterface {
 			echo "<input type='hidden' name='edu_affiliate_id' value='{$aff->id}'>";
 			echo "<button type='submit' name='edu_action' value='update' class='edu-btn'>Save</button> ";
 			echo "<button type='submit' name='edu_action' value='delete' class='edu-btn' style='background:#dc3545;' onclick='return confirm(\"Delete affiliate?\")'>Delete</button></td></form></tr>";
+		}
+		echo '</tbody></table>';
+
+		echo '<h2 style="margin-top:30px;">Pending Commissions</h2>';
+		$commissions = $wpdb->get_results( "SELECT c.*, u.display_name FROM {$wpdb->prefix}edu_commissions c JOIN {$wpdb->prefix}edu_affiliates a ON c.affiliate_id = a.id JOIN {$wpdb->users} u ON a.user_id = u.ID WHERE c.status = 'unpaid'" );
+		echo '<table class="wp-list-table widefat fixed striped"><thead><tr><th>Affiliate</th><th>Amount</th><th>Order ID</th><th>Actions</th></tr></thead><tbody>';
+		foreach ( $commissions as $comm ) {
+			$pay_url = wp_nonce_url( admin_url( 'admin.php?page=edu-affiliates&comm_action=mark_paid&id=' . $comm->id ), 'edu_comm_pay_action' );
+			echo "<tr><td>{$comm->display_name}</td><td>\${$comm->amount}</td><td>#{$comm->order_id}</td>";
+			echo "<td><a href='{$pay_url}' class='edu-btn' style='background:#28a745;'>Mark as Paid</a></td></tr>";
 		}
 		echo '</tbody></table></div>';
 	}
