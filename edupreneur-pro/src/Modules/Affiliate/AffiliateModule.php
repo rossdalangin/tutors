@@ -34,20 +34,79 @@ class AffiliateModule implements ModuleInterface {
 			'edu-affiliate-assets',
 			array( $this, 'render_affiliate_assets' )
 		);
+
+		add_submenu_page(
+			'edupreneur-pro',
+			__( 'Manage Promo Assets', 'edupreneur-pro' ),
+			__( 'Manage Assets', 'edupreneur-pro' ),
+			'manage_options',
+			'edu-asset-mgmt',
+			array( $this, 'render_asset_mgmt_page' )
+		);
+	}
+
+	public function render_asset_mgmt_page() {
+		global $wpdb;
+		if ( isset( $_POST['edu_asset_action'] ) ) {
+			check_admin_referer( 'edu_asset_action' );
+			if ( $_POST['edu_asset_action'] === 'save' ) {
+				$data = array( 'title' => sanitize_text_field( $_POST['title'] ), 'content' => sanitize_textarea_field( $_POST['content'] ), 'asset_type' => sanitize_text_field( $_POST['asset_type'] ) );
+				if ( ! empty( $_POST['asset_id'] ) ) {
+					$wpdb->update( "{$wpdb->prefix}edu_assets", $data, array( 'id' => intval( $_POST['asset_id'] ) ) );
+				} else {
+					$wpdb->insert( "{$wpdb->prefix}edu_assets", $data );
+				}
+			} elseif ( $_POST['edu_asset_action'] === 'delete' ) {
+				$wpdb->delete( "{$wpdb->prefix}edu_assets", array( 'id' => intval( $_POST['asset_id'] ) ) );
+			}
+			echo '<div class="updated"><p>Asset updated.</p></div>';
+		}
+		$items = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}edu_assets" );
+		echo '<div class="edu-admin-wrap"><h1>Manage Promo Assets</h1>';
+		echo '<form method="post" class="edu-card" style="margin-bottom:20px;">';
+		wp_nonce_field( 'edu_asset_action' );
+		echo '<h3>Add/Edit Asset</h3>';
+		echo '<input type="hidden" name="asset_id" id="asset_id">';
+		echo '<div class="edu-form-group"><label>Title</label><input type="text" name="title" id="asset_title" required></div>';
+		echo '<div class="edu-form-group"><label>Type</label><select name="asset_type" id="asset_type"><option>text</option><option>banner</option></select></div>';
+		echo '<div class="edu-form-group"><label>Content (Text or Image URL)</label><textarea name="content" id="asset_content" rows="5" required></textarea></div>';
+		echo '<button type="submit" name="edu_asset_action" value="save" class="edu-btn">Save Asset</button></form>';
+
+		echo '<table class="wp-list-table widefat fixed striped"><thead><tr><th>Title</th><th>Type</th><th>Actions</th></tr></thead><tbody>';
+		foreach ( $items as $item ) {
+			echo "<tr><td>" . esc_html( $item->title ) . "</td><td>" . esc_html( $item->asset_type ) . "</td><td>";
+			echo "<button class='edu-btn' onclick='document.getElementById(\"asset_id\").value=\"{$item->id}\";document.getElementById(\"asset_title\").value=\"".esc_js($item->title)."\";document.getElementById(\"asset_type\").value=\"".esc_js($item->asset_type)."\";document.getElementById(\"asset_content\").value=\"".esc_js($item->content)."\";'>Edit</button> ";
+			echo "<form method='post' style='display:inline;'>";
+			wp_nonce_field( 'edu_asset_action' );
+			echo "<input type='hidden' name='asset_id' value='{$item->id}'>";
+			echo "<button type='submit' name='edu_asset_action' value='delete' class='edu-btn' style='background:#dc3545;' onclick='return confirm(\"Delete asset?\")'>Delete</button></form></td></tr>";
+		}
+		echo '</tbody></table></div>';
 	}
 
 	public function render_affiliate_assets() {
+		global $wpdb;
+		$items = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}edu_assets" );
 		echo '<div class="edu-admin-wrap">';
 		echo '<header class="edu-header"><h1>' . esc_html__( 'Promotional Assets', 'edupreneur-pro' ) . '</h1>';
 		echo '<p>' . esc_html__( 'High-converting banners and copy to help you sell more.', 'edupreneur-pro' ) . '</p></header>';
 
-		echo '<div class="edu-grid">';
-		echo '<div class="edu-card"><h3>' . esc_html__( 'Email Swipe 1', 'edupreneur-pro' ) . '</h3>';
-		echo '<pre style="background:#f4f4f4; padding:15px; white-space: pre-wrap;">' . esc_html__( "Subject: Master Digital Entrepreneurship Today!\n\nHey [Name],\n\nI just found this amazing course...", 'edupreneur-pro' ) . '</pre></div>';
-
-		echo '<div class="edu-card"><h3>' . esc_html__( 'Social Media Graphic', 'edupreneur-pro' ) . '</h3>';
-		echo '<div style="width:100%; height:150px; background:#ddd; display:flex; align-items:center; justify-content:center; color:#666;">Banner Placeholder 300x250</div></div>';
-		echo '</div></div>';
+		if ( empty( $items ) ) {
+			echo '<p>No promotional materials available yet.</p>';
+		} else {
+			echo '<div class="edu-grid">';
+			foreach ( $items as $item ) {
+				echo '<div class="edu-card"><h3>' . esc_html( $item->title ) . '</h3>';
+				if ( $item->asset_type === 'banner' ) {
+					echo '<img src="' . esc_url( $item->content ) . '" style="max-width:100%; height:auto;">';
+				} else {
+					echo '<pre style="background:#f4f4f4; padding:15px; white-space: pre-wrap;">' . esc_html( $item->content ) . '</pre>';
+				}
+				echo '</div>';
+			}
+			echo '</div>';
+		}
+		echo '</div>';
 	}
 
 	public function render_affiliate_dashboard() {

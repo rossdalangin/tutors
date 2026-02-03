@@ -19,10 +19,18 @@ class AnalyticsEngine {
 		$total_refunds = $wpdb->get_var( "SELECT SUM(total_amount) FROM {$wpdb->prefix}edu_orders WHERE status = 'refunded'" );
 		$net_revenue = $total_gross - $total_refunds;
 
+		$count = $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}edu_orders WHERE status = 'completed'" );
+		$students = $wpdb->get_var( "SELECT COUNT(DISTINCT student_id) FROM {$wpdb->prefix}edu_enrollments" );
+		$avg_completion = $wpdb->get_var( "SELECT AVG(completed) FROM {$wpdb->prefix}edu_progress" ) * 100;
+
 		return array(
-			'gross'   => $total_gross ?: 0,
-			'refunds' => $total_refunds ?: 0,
-			'net'     => $net_revenue ?: 0,
+			'gross'           => $total_gross ?: 0,
+			'refunds'         => $total_refunds ?: 0,
+			'net'             => $net_revenue ?: 0,
+			'order_count'     => $count ?: 0,
+			'student_count'   => $students ?: 0,
+			'avg_completion'  => round( $avg_completion ?: 0, 1 ),
+			'avg_order_value' => $count ? ( $total_gross / $count ) : 0,
 		);
 	}
 

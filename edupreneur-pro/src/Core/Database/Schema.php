@@ -125,6 +125,22 @@ class Schema {
 				url varchar(255) NOT NULL,
 				PRIMARY KEY  (id)
 			) $charset_collate;",
+
+			"{$prefix}kb" => "CREATE TABLE {$prefix}kb (
+				id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+				title varchar(255) NOT NULL,
+				content longtext NOT NULL,
+				category varchar(50) DEFAULT 'general',
+				PRIMARY KEY  (id)
+			) $charset_collate;",
+
+			"{$prefix}assets" => "CREATE TABLE {$prefix}assets (
+				id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+				title varchar(255) NOT NULL,
+				content text NOT NULL,
+				asset_type varchar(50) DEFAULT 'text',
+				PRIMARY KEY  (id)
+			) $charset_collate;",
 		);
 	}
 }

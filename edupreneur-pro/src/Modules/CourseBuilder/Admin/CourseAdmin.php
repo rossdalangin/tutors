@@ -30,11 +30,15 @@ class CourseAdmin {
 		} elseif ( current_user_can( 'view_edu_affiliate_dashboard' ) ) {
 			$aff_module = \EdupreneurPro::instance()->container->get( 'module_affiliate' );
 			if ( $aff_module ) {
+				echo '<div class="edu-admin-wrap"><header class="edu-header"><h1>' . esc_html__( 'Partner Portal', 'edupreneur-pro' ) . '</h1>';
+				echo '<p>' . esc_html__( 'Welcome back! Here is a summary of your performance and tools.', 'edupreneur-pro' ) . '</p></header></div>';
 				$aff_module->render_affiliate_dashboard();
 			}
 		} elseif ( current_user_can( 'view_edu_courses' ) ) {
 			$dash_module = \EdupreneurPro::instance()->container->get( 'module_dashboard' );
 			if ( $dash_module ) {
+				echo '<div class="edu-admin-wrap"><header class="edu-header"><h1>' . esc_html__( 'Student Learning Center', 'edupreneur-pro' ) . '</h1>';
+				echo '<p>' . esc_html__( 'Welcome back to your dashboard. Continue your educational journey below.', 'edupreneur-pro' ) . '</p></header></div>';
 				$dash_module->render_my_courses_page();
 			}
 		} else {

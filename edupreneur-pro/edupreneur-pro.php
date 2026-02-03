@@ -157,38 +157,43 @@ final class EdupreneurPro {
 		} else {
 			echo '<div class="edu-grid">';
 			foreach ( $courses as $course ) {
+				$total_lessons = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}edu_lessons WHERE course_id = %d", $course->id ) );
+				$completed_lessons = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}edu_progress WHERE student_id = %d AND course_id = %d AND completed = 1", $student_id, $course->id ) );
+				$progress_pct = $total_lessons > 0 ? round( ( $completed_lessons / $total_lessons ) * 100 ) : 0;
+
 				echo '<div class="edu-card">';
-				echo '<h3>' . esc_html( $course->title ) . '</h3>';
-				echo '<p>' . esc_html( wp_trim_words( $course->description, 20 ) ) . '</p>';
+				echo '<div style="display:flex; justify-content:space-between; align-items:flex-start;">';
+				echo '<h3 style="margin-top:0;">' . esc_html( $course->title ) . '</h3>';
+				echo '<span class="edu-badge">' . $progress_pct . '%</span>';
+				echo '</div>';
+
+				echo '<div style="background:#eee; height:8px; border-radius:4px; margin:10px 0; overflow:hidden;">';
+				echo '<div style="background:var(--edu-primary); height:100%; width:' . $progress_pct . '%;"></div>';
+				echo '</div>';
+
+				echo '<p class="edu-caption">' . sprintf( __( '%d of %d lessons completed', 'edupreneur-pro' ), $completed_lessons, $total_lessons ) . '</p>';
 
 				$modules = $wpdb->get_results( $wpdb->prepare( "SELECT id, title FROM {$wpdb->prefix}edu_modules WHERE course_id = %d ORDER BY order_index ASC", $course->id ) );
 
 				if ( ! empty( $modules ) ) {
 					foreach ( $modules as $module ) {
-						echo '<div class="edu-module-summary" style="margin-top:10px;">';
-						echo '<strong style="font-size: 0.9em; color: #666;">' . esc_html( $module->title ) . '</strong>';
+						echo '<div class="edu-module-summary" style="margin-top:15px; border-top:1px solid #f0f0f0; padding-top:10px;">';
+						echo '<strong style="font-size: 0.85em; color: #888; text-transform:uppercase;">' . esc_html( $module->title ) . '</strong>';
 						$lessons = $wpdb->get_results( $wpdb->prepare( "SELECT id, title FROM {$wpdb->prefix}edu_lessons WHERE module_id = %d ORDER BY order_index ASC", $module->id ) );
 						if ( ! empty( $lessons ) ) {
-							echo '<ul style="margin-left:15px; margin-bottom:10px;">';
+							echo '<ul style="margin: 5px 0 0 15px; list-style: disc;">';
 							foreach ( $lessons as $lesson ) {
-								echo '<li><a href="' . add_query_arg( array( 'edu_lesson' => $lesson->id ), get_permalink() ) . '" style="font-size: 0.9em;">' . esc_html( $lesson->title ) . '</a></li>';
+								$is_done = $wpdb->get_var( $wpdb->prepare( "SELECT completed FROM {$wpdb->prefix}edu_progress WHERE student_id = %d AND lesson_id = %d", $student_id, $lesson->id ) );
+								$style = $is_done ? 'text-decoration: line-through; color: #aaa;' : 'font-weight: 500;';
+								echo '<li style="margin-bottom:5px;"><a href="' . add_query_arg( array( 'edu_lesson' => $lesson->id ), get_permalink() ) . '" style="' . $style . '">' . esc_html( $lesson->title ) . '</a></li>';
 							}
 							echo '</ul>';
 						}
 						echo '</div>';
 					}
-				} else {
-					// Fallback to flat list of lessons if no modules
-					$lessons = $wpdb->get_results( $wpdb->prepare( "SELECT id, title FROM {$wpdb->prefix}edu_lessons WHERE course_id = %d ORDER BY order_index ASC", $course->id ) );
-					if ( ! empty( $lessons ) ) {
-						echo '<ul style="margin-top:15px; border-top:1px solid #eee; padding-top:10px;">';
-						foreach ( $lessons as $lesson ) {
-							echo '<li><a href="' . add_query_arg( array( 'edu_lesson' => $lesson->id ), get_permalink() ) . '">' . esc_html( $lesson->title ) . '</a></li>';
-						}
-						echo '</ul>';
-					}
 				}
 
+				echo '<a href="' . add_query_arg( array( 'edu_course_id' => $course->id ), get_permalink() ) . '" class="edu-btn edu-btn-block" style="margin-top:20px;">' . esc_html__( 'Continue Learning', 'edupreneur-pro' ) . '</a>';
 				echo '</div>';
 			}
 			echo '</div>';

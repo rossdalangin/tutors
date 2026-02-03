@@ -108,6 +108,15 @@ class DashboardModule implements ModuleInterface {
 			'edu-my-orders',
 			array( $this, 'render_my_orders_page' )
 		);
+
+		add_submenu_page(
+			'edupreneur-pro',
+			__( 'Manage Knowledge Base', 'edupreneur-pro' ),
+			__( 'Manage KB', 'edupreneur-pro' ),
+			'manage_options',
+			'edu-kb-mgmt',
+			array( $this, 'render_kb_mgmt_page' )
+		);
 	}
 
 	public function render_orders_page() {
@@ -304,21 +313,63 @@ class DashboardModule implements ModuleInterface {
 		echo '</div></div>';
 	}
 
+	public function render_kb_mgmt_page() {
+		global $wpdb;
+		if ( isset( $_POST['edu_kb_action'] ) ) {
+			check_admin_referer( 'edu_kb_action' );
+			if ( $_POST['edu_kb_action'] === 'save' ) {
+				$data = array( 'title' => sanitize_text_field( $_POST['title'] ), 'content' => wp_kses_post( $_POST['content'] ), 'category' => sanitize_text_field( $_POST['category'] ) );
+				if ( ! empty( $_POST['kb_id'] ) ) {
+					$wpdb->update( "{$wpdb->prefix}edu_kb", $data, array( 'id' => intval( $_POST['kb_id'] ) ) );
+				} else {
+					$wpdb->insert( "{$wpdb->prefix}edu_kb", $data );
+				}
+			} elseif ( $_POST['edu_kb_action'] === 'delete' ) {
+				$wpdb->delete( "{$wpdb->prefix}edu_kb", array( 'id' => intval( $_POST['kb_id'] ) ) );
+			}
+			echo '<div class="updated"><p>Knowledge Base updated.</p></div>';
+		}
+		$items = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}edu_kb" );
+		echo '<div class="edu-admin-wrap"><h1>Manage Knowledge Base</h1>';
+		echo '<form method="post" class="edu-card" style="margin-bottom:20px;">';
+		wp_nonce_field( 'edu_kb_action' );
+		echo '<h3>Add/Edit Article</h3>';
+		echo '<input type="hidden" name="kb_id" id="kb_id">';
+		echo '<div class="edu-form-group"><label>Title</label><input type="text" name="title" id="kb_title" required></div>';
+		echo '<div class="edu-form-group"><label>Category</label><input type="text" name="category" id="kb_category" placeholder="e.g. general, payments"></div>';
+		echo '<div class="edu-form-group"><label>Content</label><textarea name="content" id="kb_content" rows="5" required></textarea></div>';
+		echo '<button type="submit" name="edu_kb_action" value="save" class="edu-btn">Save Article</button></form>';
+
+		echo '<table class="wp-list-table widefat fixed striped"><thead><tr><th>Title</th><th>Category</th><th>Actions</th></tr></thead><tbody>';
+		foreach ( $items as $item ) {
+			echo "<tr><td>" . esc_html( $item->title ) . "</td><td>" . esc_html( $item->category ) . "</td><td>";
+			echo "<button class='edu-btn' onclick='document.getElementById(\"kb_id\").value=\"{$item->id}\";document.getElementById(\"kb_title\").value=\"".esc_js($item->title)."\";document.getElementById(\"kb_category\").value=\"".esc_js($item->category)."\";document.getElementById(\"kb_content\").value=\"".esc_js($item->content)."\";'>Edit</button> ";
+			echo "<form method='post' style='display:inline;'>";
+			wp_nonce_field( 'edu_kb_action' );
+			echo "<input type='hidden' name='kb_id' value='{$item->id}'>";
+			echo "<button type='submit' name='edu_kb_action' value='delete' class='edu-btn' style='background:#dc3545;' onclick='return confirm(\"Delete article?\")'>Delete</button></form></td></tr>";
+		}
+		echo '</tbody></table></div>';
+	}
+
 	public function render_help_page() {
+		global $wpdb;
+		$items = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}edu_kb" );
 		echo '<div class="edu-admin-wrap">';
 		echo '<header class="edu-header"><h1>' . esc_html__( 'EdupreneurPro Knowledge Base', 'edupreneur-pro' ) . '</h1>';
 		echo '<p>' . esc_html__( 'Master every feature of your education business system. From setup to scale, we have you covered.', 'edupreneur-pro' ) . '</p></header>';
 
-		echo '<div class="edu-grid">';
-		echo '<div class="edu-card"><h3>' . esc_html__( 'Getting Started Guide', 'edupreneur-pro' ) . '</h3>';
-		echo '<p>' . esc_html__( 'Learn how to configure your payment gateways, set up your instructor profile, and launch your first course in under 15 minutes.', 'edupreneur-pro' ) . '</p></div>';
-
-		echo '<div class="edu-card"><h3>' . esc_html__( 'Maximizing Revenue', 'edupreneur-pro' ) . '</h3>';
-		echo '<p>' . esc_html__( 'Discover how to use the built-in affiliate engine and subscription models to create sustainable, recurring income.', 'edupreneur-pro' ) . '</p></div>';
-
-		echo '<div class="edu-card"><h3>' . esc_html__( 'Developer API Reference', 'edupreneur-pro' ) . '</h3>';
-		echo '<p>' . esc_html__( 'Extend EdupreneurPro with our robust REST API. Perfect for building custom mobile apps or third-party integrations.', 'edupreneur-pro' ) . '</p></div>';
-		echo '</div>';
+		if ( empty( $items ) ) {
+			echo '<p>No guides available yet. Tutors can add them in the Management section.</p>';
+		} else {
+			echo '<div class="edu-grid">';
+			foreach ( $items as $item ) {
+				echo '<div class="edu-card"><h3>' . esc_html( $item->title ) . '</h3>';
+				echo '<p>' . wp_kses_post( $item->content ) . '</p>';
+				echo '<span class="tag">' . esc_html( $item->category ) . '</span></div>';
+			}
+			echo '</div>';
+		}
 
 		echo '<div class="edu-guide-section"><h4>' . esc_html__( 'Need Technical Assistance?', 'edupreneur-pro' ) . '</h4>';
 		echo '<p>' . esc_html__( 'Detailed documentation files (API.md, Manual.md) are available in the plugin directory for advanced users and developers.', 'edupreneur-pro' ) . '</p></div>';
@@ -333,29 +384,27 @@ class DashboardModule implements ModuleInterface {
 		echo '<header class="edu-header"><h1>' . esc_html__( 'Business Performance Overview', 'edupreneur-pro' ) . '</h1>';
 		echo '<p>' . esc_html__( 'Real-time analytics to help you make data-driven decisions for your education business.', 'edupreneur-pro' ) . '</p></header>';
 
-		echo '<div class="edu-guide-section"><h4>' . esc_html__( 'Understanding Your Metrics', 'edupreneur-pro' ) . '</h4>';
-		echo '<p>' . esc_html__( 'Use the Gross Revenue to see total sales volume, and Net Revenue to understand your actual profitability after refunds and costs.', 'edupreneur-pro' ) . '</p></div>';
-
 		echo '<div class="edu-grid">';
-		echo '<div class="edu-card">';
-		echo '<h3>' . esc_html__( 'Gross Sales Volume', 'edupreneur-pro' ) . '</h3>';
-		echo '<div class="edu-stat-val">$' . number_format( $stats['gross'], 2 ) . '</div>';
-		echo '<p>' . esc_html__( 'Total transaction value before any deductions.', 'edupreneur-pro' ) . '</p>';
+		echo '<div class="edu-card"><h3>' . esc_html__( 'Gross Sales', 'edupreneur-pro' ) . '</h3><div class="edu-stat-val">$' . number_format( $stats['gross'], 2 ) . '</div><p>' . esc_html__( 'Total revenue generated.', 'edupreneur-pro' ) . '</p></div>';
+		echo '<div class="edu-card"><h3>' . esc_html__( 'Net Profit', 'edupreneur-pro' ) . '</h3><div class="edu-stat-val">$' . number_format( $stats['net'], 2 ) . '</div><p>' . esc_html__( 'Revenue minus refunds/fees.', 'edupreneur-pro' ) . '</p></div>';
+		echo '<div class="edu-card"><h3>' . esc_html__( 'Total Students', 'edupreneur-pro' ) . '</h3><div class="edu-stat-val">' . number_format( $stats['student_count'] ) . '</div><p>' . esc_html__( 'Active learners on platform.', 'edupreneur-pro' ) . '</p></div>';
+		echo '<div class="edu-card"><h3>' . esc_html__( 'Orders', 'edupreneur-pro' ) . '</h3><div class="edu-stat-val">' . number_format( $stats['order_count'] ) . '</div><p>' . esc_html__( 'Successful transactions.', 'edupreneur-pro' ) . '</p></div>';
+		echo '<div class="edu-card"><h3>' . esc_html__( 'Avg. Completion', 'edupreneur-pro' ) . '</h3><div class="edu-stat-val">' . $stats['avg_completion'] . '%</div><p>' . esc_html__( 'Course progress rate.', 'edupreneur-pro' ) . '</p></div>';
+		echo '<div class="edu-card"><h3>' . esc_html__( 'Avg. Order Value', 'edupreneur-pro' ) . '</h3><div class="edu-stat-val">$' . number_format( $stats['avg_order_value'], 2 ) . '</div><p>' . esc_html__( 'Revenue per order.', 'edupreneur-pro' ) . '</p></div>';
 		echo '</div>';
 
-		echo '<div class="edu-card">';
-		echo '<h3>' . esc_html__( 'Net Business Profit', 'edupreneur-pro' ) . '</h3>';
-		echo '<div class="edu-stat-val">$' . number_format( $stats['net'], 2 ) . '</div>';
-		echo '<p>' . esc_html__( 'Actual revenue retained by your business.', 'edupreneur-pro' ) . '</p>';
+		echo '<div class="edu-card" style="margin-top:20px;">';
+		echo '<h3>' . esc_html__( 'Business Health Check', 'edupreneur-pro' ) . '</h3>';
+		echo '<div style="background:#f8f9fa; padding:20px; border-radius:8px; border-left:5px solid var(--edu-primary);">';
+		if ( $stats['avg_completion'] > 70 ) {
+			echo '<p style="color:#28a745; font-weight:600;">✅ Excellent student engagement!</p>';
+		} else {
+			echo '<p style="color:#856404; font-weight:600;">⚠️ Consider adding more interactive resources to boost completion rates.</p>';
+		}
+		echo '<p>' . sprintf( __( 'You have generated %d orders with an average value of $%s.', 'edupreneur-pro' ), $stats['order_count'], number_format( $stats['avg_order_value'], 2 ) ) . '</p>';
+		echo '</div></div>';
+
 		echo '</div>';
-
-		echo '<div class="edu-card" style="grid-column: span 2;">';
-		echo '<h3>' . esc_html__( 'Student Enrollment Growth', 'edupreneur-pro' ) . '</h3>';
-		echo '<div style="height: 200px; background: #f9f9f9; border: 1px dashed #ccc; display: flex; align-items: center; justify-content: center;">';
-		echo '<p>' . esc_html__( 'Visualizing your student growth trends. Check back as you enroll more learners!', 'edupreneur-pro' ) . '</p>';
-		echo '</div></div>';
-
-		echo '</div></div>';
 	}
 
 	public function get_id() {

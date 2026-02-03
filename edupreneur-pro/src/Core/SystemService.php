@@ -136,5 +136,31 @@ class SystemService {
 			'amount'       => 29.99,
 			'status'       => 'unpaid'
 		) );
+
+		// Sample KB Articles
+		$wpdb->insert( "{$wpdb->prefix}edu_kb", array(
+			'title'    => 'Getting Started with Your Business',
+			'content'  => 'Learn the basics of setting up your tutor profile and launch your first course in minutes.',
+			'category' => 'setup'
+		) );
+
+		$wpdb->insert( "{$wpdb->prefix}edu_kb", array(
+			'title'    => 'Accepting Payments via Stripe',
+			'content'  => 'Configure your Stripe API keys in the Settings tab to start accepting credit card payments globally.',
+			'category' => 'payments'
+		) );
+
+		// Sample Promo Assets
+		$wpdb->insert( "{$wpdb->prefix}edu_assets", array(
+			'title'      => 'Main Sales Email Swipe',
+			'content'    => "Subject: You're invited to join our exclusive program!\n\nHi [Name],\n\nI wanted to share this opportunity with you...",
+			'asset_type' => 'text'
+		) );
+
+		$wpdb->insert( "{$wpdb->prefix}edu_assets", array(
+			'title'      => 'Sidebar Banner 300x250',
+			'content'    => 'https://via.placeholder.com/300x250.png?text=Join+EdupreneurPro+Today',
+			'asset_type' => 'banner'
+		) );
 	}
 }

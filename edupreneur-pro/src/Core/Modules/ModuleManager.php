@@ -19,6 +19,7 @@ class ModuleManager {
 				$module = new $class( $this->container );
 				$module->init();
 				$this->modules[ $module->get_id() ] = $module;
+				$this->container->set( 'module_' . $module->get_id(), $module );
 			}
 		}
 	}
