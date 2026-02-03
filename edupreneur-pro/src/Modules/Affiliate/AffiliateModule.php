@@ -25,6 +25,29 @@ class AffiliateModule implements ModuleInterface {
 			'edu-affiliate-dashboard',
 			array( $this, 'render_affiliate_dashboard' )
 		);
+
+		add_submenu_page(
+			'edupreneur-pro',
+			__( 'Affiliate Promo Materials', 'edupreneur-pro' ),
+			__( 'Promo Assets', 'edupreneur-pro' ),
+			'view_edu_affiliate_dashboard',
+			'edu-affiliate-assets',
+			array( $this, 'render_affiliate_assets' )
+		);
+	}
+
+	public function render_affiliate_assets() {
+		echo '<div class="edu-admin-wrap">';
+		echo '<header class="edu-header"><h1>' . esc_html__( 'Promotional Assets', 'edupreneur-pro' ) . '</h1>';
+		echo '<p>' . esc_html__( 'High-converting banners and copy to help you sell more.', 'edupreneur-pro' ) . '</p></header>';
+
+		echo '<div class="edu-grid">';
+		echo '<div class="edu-card"><h3>' . esc_html__( 'Email Swipe 1', 'edupreneur-pro' ) . '</h3>';
+		echo '<pre style="background:#f4f4f4; padding:15px; white-space: pre-wrap;">' . esc_html__( "Subject: Master Digital Entrepreneurship Today!\n\nHey [Name],\n\nI just found this amazing course...", 'edupreneur-pro' ) . '</pre></div>';
+
+		echo '<div class="edu-card"><h3>' . esc_html__( 'Social Media Graphic', 'edupreneur-pro' ) . '</h3>';
+		echo '<div style="width:100%; height:150px; background:#ddd; display:flex; align-items:center; justify-content:center; color:#666;">Banner Placeholder 300x250</div></div>';
+		echo '</div></div>';
 	}
 
 	public function render_affiliate_dashboard() {

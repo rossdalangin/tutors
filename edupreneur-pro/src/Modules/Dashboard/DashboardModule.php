@@ -90,6 +90,24 @@ class DashboardModule implements ModuleInterface {
 			'edu-my-courses',
 			array( $this, 'render_my_courses_page' )
 		);
+
+		add_submenu_page(
+			'edupreneur-pro',
+			__( 'Student Community', 'edupreneur-pro' ),
+			__( 'Community Board', 'edupreneur-pro' ),
+			'view_edu_community',
+			'edu-student-community',
+			array( $this, 'render_student_community_page' )
+		);
+
+		add_submenu_page(
+			'edupreneur-pro',
+			__( 'My Purchase History', 'edupreneur-pro' ),
+			__( 'My Orders', 'edupreneur-pro' ),
+			'view_edu_orders',
+			'edu-my-orders',
+			array( $this, 'render_my_orders_page' )
+		);
 	}
 
 	public function render_orders_page() {
@@ -170,6 +188,61 @@ class DashboardModule implements ModuleInterface {
 		// Use the same logic as the shortcode but rendered in admin
 		$plugin = \EdupreneurPro::instance();
 		echo $plugin->render_student_dashboard();
+		echo '</div>';
+	}
+
+	public function render_student_community_page() {
+		echo '<div class="edu-admin-wrap">';
+		echo '<header class="edu-header"><h1>' . esc_html__( 'Community Discussion Board', 'edupreneur-pro' ) . '</h1>';
+		echo '<p>' . esc_html__( 'Connect with fellow learners and your instructors.', 'edupreneur-pro' ) . '</p></header>';
+
+		$board = new \EdupreneurPro\Modules\Community\Services\DiscussionBoard();
+		$posts = $board->get_posts( 0 ); // Global posts for demo
+
+		echo '<div class="edu-card">';
+		echo '<h3>' . esc_html__( 'Recent Activity', 'edupreneur-pro' ) . '</h3>';
+		if ( empty( $posts ) ) {
+			echo '<p>' . esc_html__( 'No activity yet. Be the first to start a conversation!', 'edupreneur-pro' ) . '</p>';
+		} else {
+			foreach ( $posts as $post ) {
+				$user = get_userdata( $post->user_id );
+				echo '<div style="border-bottom:1px solid #eee; padding:10px 0;">';
+				echo '<strong>' . ( $user ? esc_html( $user->display_name ) : 'Unknown' ) . '</strong>: ';
+				echo esc_html( $post->content );
+				echo '</div>';
+			}
+		}
+		echo '<form method="post" style="margin-top:20px;">';
+		wp_nonce_field( 'edu_new_post' );
+		echo '<textarea name="content" style="width:100%;" placeholder="What is on your mind?"></textarea>';
+		echo '<button type="submit" class="edu-btn" style="margin-top:10px;">Post to Community</button>';
+		echo '</form></div></div>';
+
+		if ( isset( $_POST['content'] ) && check_admin_referer( 'edu_new_post' ) ) {
+			$board->create_post( array( 'content' => $_POST['content'], 'course_id' => 0 ) );
+			echo '<script>location.reload();</script>';
+		}
+	}
+
+	public function render_my_orders_page() {
+		global $wpdb;
+		$user_id = get_current_user_id();
+		$orders = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}edu_orders WHERE user_id = %d ORDER BY created_at DESC", $user_id ) );
+
+		echo '<div class="edu-admin-wrap">';
+		echo '<header class="edu-header"><h1>' . esc_html__( 'My Purchase History', 'edupreneur-pro' ) . '</h1>';
+		echo '<p>' . esc_html__( 'Manage your invoices and course access.', 'edupreneur-pro' ) . '</p></header>';
+
+		if ( empty( $orders ) ) {
+			echo '<div class="edu-card"><p>' . esc_html__( 'You haven\'t made any purchases yet.', 'edupreneur-pro' ) . '</p></div>';
+		} else {
+			echo '<table class="wp-list-table widefat fixed striped">';
+			echo '<thead><tr><th>Order ID</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead><tbody>';
+			foreach ( $orders as $order ) {
+				echo "<tr><td>#{$order->id}</td><td>\${$order->total_amount}</td><td>{$order->status}</td><td>{$order->created_at}</td></tr>";
+			}
+			echo '</tbody></table>';
+		}
 		echo '</div>';
 	}
 

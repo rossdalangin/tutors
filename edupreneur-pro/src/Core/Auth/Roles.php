@@ -28,6 +28,26 @@ class Roles {
 			$admin->add_cap( 'view_edu_reports' );
 			$admin->add_cap( 'view_edu_courses' );
 			$admin->add_cap( 'view_edu_affiliate_dashboard' );
+			$admin->add_cap( 'view_edu_community' );
+		}
+	}
+
+	/**
+	 * Ensure all roles have their expected capabilities.
+	 */
+	public static function ensure_all_caps() {
+		self::grant_admin_caps();
+
+		$student = get_role( 'student' );
+		if ( $student ) {
+			$student->add_cap( 'view_edu_courses' );
+			$student->add_cap( 'view_edu_community' );
+			$student->add_cap( 'view_edu_orders' );
+		}
+
+		$affiliate = get_role( 'affiliate' );
+		if ( $affiliate ) {
+			$affiliate->add_cap( 'view_edu_affiliate_dashboard' );
 		}
 	}
 }

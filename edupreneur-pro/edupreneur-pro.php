@@ -54,11 +54,11 @@ final class EdupreneurPro {
 	}
 
 	/**
-	 * Ensure admin has necessary capabilities.
+	 * Ensure roles have necessary capabilities.
 	 */
 	public function ensure_admin_capabilities() {
-		if ( current_user_can( 'administrator' ) && ! current_user_can( 'manage_edu_courses' ) ) {
-			\EdupreneurPro\Core\Auth\Roles::grant_admin_caps();
+		if ( is_admin() && current_user_can( 'read' ) ) {
+			\EdupreneurPro\Core\Auth\Roles::ensure_all_caps();
 		}
 	}
 

@@ -41,6 +41,9 @@ class SystemService {
 				$user_id = wp_create_user( $u['user_login'], $u['user_pass'] );
 				$user = new \WP_User( $user_id );
 				$user->set_role( $u['role'] );
+			} else {
+				$user = get_user_by( 'login', $u['user_login'] );
+				$user->set_role( $u['role'] );
 			}
 		}
 

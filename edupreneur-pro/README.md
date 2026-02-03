@@ -19,9 +19,9 @@ You can use the following sample accounts to test different roles. Load sample d
 
 | Role | Username | Password | Purpose |
 | :--- | :--- | :--- | :--- |
-| **Tutor (Admin)** | `tutor_demo` | `demo123` | Full management access to courses, orders, and platform settings. |
-| **Learner (Student)** | `student_demo` | `demo123` | Access "My Courses" in the dashboard and track learning progress. |
-| **Affiliate** | `affiliate_demo` | `demo123` | Access the Partner Dashboard to track referral link conversions and earnings. |
+| **Tutor (Admin)** | `tutor_demo` | `demo123` | Full management access to courses, modules, lessons, orders, and platform settings. |
+| **Learner (Student)** | `student_demo` | `demo123` | Access "My Courses", participate in the "Community Board", and view "Purchase History". |
+| **Affiliate** | `affiliate_demo` | `demo123` | Access the "Partner Dashboard" for referral links and "Promo Assets" for marketing materials. |
 
 ## 📚 Documentation
 - **Manual**: See `manual.md` for a full user guide.
