@@ -81,6 +81,15 @@ class DashboardModule implements ModuleInterface {
 			'edu-community-mgmt',
 			array( $this, 'render_community_mgmt_page' )
 		);
+
+		add_submenu_page(
+			'edupreneur-pro',
+			__( 'My Enrolled Courses', 'edupreneur-pro' ),
+			__( 'My Courses', 'edupreneur-pro' ),
+			'view_edu_courses',
+			'edu-my-courses',
+			array( $this, 'render_my_courses_page' )
+		);
 	}
 
 	public function render_orders_page() {
@@ -151,6 +160,17 @@ class DashboardModule implements ModuleInterface {
 			echo "<td><a href='{$pin_url}' class='edu-btn'>Pin</a> <a href='{$delete_url}' class='edu-btn' style='background:#dc3545;' onclick='return confirm(\"Delete post?\")'>Delete</a></td></tr>";
 		}
 		echo '</tbody></table></div>';
+	}
+
+	public function render_my_courses_page() {
+		echo '<div class="edu-admin-wrap">';
+		echo '<header class="edu-header"><h1>' . esc_html__( 'My Courses', 'edupreneur-pro' ) . '</h1>';
+		echo '<p>' . esc_html__( 'Pick up where you left off and master new skills.', 'edupreneur-pro' ) . '</p></header>';
+
+		// Use the same logic as the shortcode but rendered in admin
+		$plugin = \EdupreneurPro::instance();
+		echo $plugin->render_student_dashboard();
+		echo '</div>';
 	}
 
 	public function render_students_page() {

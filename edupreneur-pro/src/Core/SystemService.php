@@ -32,8 +32,8 @@ class SystemService {
 		// Create sample users if they don't exist
 		$users = array(
 			array( 'user_login' => 'tutor_demo', 'user_pass' => 'demo123', 'role' => 'administrator' ),
-			array( 'user_login' => 'student_demo', 'user_pass' => 'demo123', 'role' => 'subscriber' ),
-			array( 'user_login' => 'affiliate_demo', 'user_pass' => 'demo123', 'role' => 'subscriber' )
+			array( 'user_login' => 'student_demo', 'user_pass' => 'demo123', 'role' => 'student' ),
+			array( 'user_login' => 'affiliate_demo', 'user_pass' => 'demo123', 'role' => 'affiliate' )
 		);
 
 		foreach ( $users as $u ) {

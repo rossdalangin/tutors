@@ -4,7 +4,14 @@ class Roles {
 	public static function register() {
 		add_role( 'tutor', 'Tutor', array( 'read' => true, 'manage_edu_courses' => true, 'manage_edu_lessons' => true, 'view_edu_reports' => true ) );
 		add_role( 'student', 'Student', array( 'read' => true, 'view_edu_courses' => true ) );
-		add_role( 'affiliate', 'Affiliate', array( 'read' => true ) );
+		add_role( 'affiliate', 'Affiliate', array( 'read' => true, 'view_edu_affiliate_dashboard' => true ) );
+
+		// Ensure existing roles have caps
+		$student = get_role( 'student' );
+		if ( $student ) $student->add_cap( 'view_edu_courses' );
+
+		$affiliate = get_role( 'affiliate' );
+		if ( $affiliate ) $affiliate->add_cap( 'view_edu_affiliate_dashboard' );
 
 		// Grant capabilities to administrator.
 		self::grant_admin_caps();
@@ -19,6 +26,8 @@ class Roles {
 			$admin->add_cap( 'manage_edu_courses' );
 			$admin->add_cap( 'manage_edu_lessons' );
 			$admin->add_cap( 'view_edu_reports' );
+			$admin->add_cap( 'view_edu_courses' );
+			$admin->add_cap( 'view_edu_affiliate_dashboard' );
 		}
 	}
 }

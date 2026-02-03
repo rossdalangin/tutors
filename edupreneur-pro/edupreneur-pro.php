@@ -214,13 +214,14 @@ final class EdupreneurPro {
 		if ( strpos( $hook, 'edu' ) !== false || strpos( $hook, 'edupreneur' ) !== false ) {
 			wp_enqueue_style( 'edu-admin-css', plugin_dir_url( __FILE__ ) . 'assets/css/admin.css', array(), EDUPRENEUR_PRO_VERSION );
 
+			wp_localize_script( 'jquery', 'eduApi', array(
+				'root'  => esc_url_raw( rest_url() ),
+				'nonce' => wp_create_nonce( 'wp_rest' ),
+			) );
+
 			if ( strpos( $hook, 'page_edu-courses' ) !== false ) {
 				wp_enqueue_script( 'jquery-ui-sortable' );
 				wp_enqueue_script( 'edu-course-builder', plugin_dir_url( __FILE__ ) . 'assets/js/course-builder.js', array( 'jquery', 'jquery-ui-sortable' ), EDUPRENEUR_PRO_VERSION, true );
-				wp_localize_script( 'edu-course-builder', 'eduApi', array(
-					'root'  => esc_url_raw( rest_url() ),
-					'nonce' => wp_create_nonce( 'wp_rest' ),
-				) );
 			}
 		}
 	}
