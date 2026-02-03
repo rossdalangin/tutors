@@ -33,4 +33,14 @@ class DiscussionBoard {
 		global $wpdb;
 		return $wpdb->delete( $this->table, array( 'id' => $post_id ) );
 	}
+
+	public function create_study_group( $course_id, $name, $user_id ) {
+		global $wpdb;
+		return $wpdb->insert( $this->table, array(
+			'course_id' => $course_id,
+			'user_id'   => $user_id,
+			'content'   => sprintf( 'STUDY_GROUP: %s', sanitize_text_field( $name ) ),
+			'is_pinned' => 0
+		) );
+	}
 }

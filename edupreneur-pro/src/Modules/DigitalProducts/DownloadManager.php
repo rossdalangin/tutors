@@ -12,6 +12,21 @@ class DownloadManager {
 	 * Verify a download token.
 	 */
 	public function verify_token( $token ) {
-		return get_transient( 'edu_download_' . $token );
+		$data = get_transient( 'edu_download_' . $token );
+		if ( ! $data ) return false;
+
+		// Check download limits
+		$count = get_user_meta( $data['user_id'], '_edu_download_count_' . $data['product_id'], true ) ?: 0;
+		if ( $count >= 5 ) { // Hardcoded limit for demo
+			return false;
+		}
+
+		update_user_meta( $data['user_id'], '_edu_download_count_' . $data['product_id'], $count + 1 );
+		return $data;
+	}
+
+	public function watermark_pdf( $file_path, $text ) {
+		// Mock implementation: In production, use FPDM or SetaPDF
+		return "WATERMARKED: " . $file_path;
 	}
 }

@@ -27,7 +27,11 @@ class AffiliateManager {
 			return false; // Self-referral blocked
 		}
 
-		$commission_amount = $amount * ( $affiliate->commission_rate / 100 );
+		// Per-product override check (simplified logic)
+		$override_rate = get_option( 'edu_affiliate_override_rate', 0 );
+		$rate = $override_rate > 0 ? $override_rate : $affiliate->commission_rate;
+
+		$commission_amount = $amount * ( $rate / 100 );
 
 		return $wpdb->insert( "{$wpdb->prefix}edu_commissions", array(
 			'affiliate_id' => $affiliate_id,

@@ -132,7 +132,8 @@ final class EdupreneurPro {
 	 */
 	public function track_affiliate_referral() {
 		if ( isset( $_GET['ref'] ) ) {
-			setcookie( 'edu_affiliate', sanitize_text_field( $_GET['ref'] ), time() + ( 30 * DAY_IN_SECONDS ), COOKIEPATH, COOKIE_DOMAIN );
+			$duration = get_option( 'edu_affiliate_cookie_duration', 30 );
+			setcookie( 'edu_affiliate', sanitize_text_field( $_GET['ref'] ), time() + ( $duration * DAY_IN_SECONDS ), COOKIEPATH, COOKIE_DOMAIN );
 		}
 	}
 
