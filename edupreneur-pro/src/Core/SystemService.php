@@ -97,6 +97,14 @@ class SystemService {
 			'status'       => 'completed'
 		) );
 
+		// Order
+		$wpdb->insert( "{$wpdb->prefix}edu_orders", array(
+			'user_id'      => $student_id,
+			'total_amount' => 199.99,
+			'status'       => 'completed'
+		) );
+		$order_id = $wpdb->insert_id;
+
 		// Affiliate
 		$affiliate_user_id = get_user_by( 'login', 'affiliate_demo' )->ID;
 		$wpdb->insert( "{$wpdb->prefix}edu_affiliates", array(
@@ -104,6 +112,29 @@ class SystemService {
 			'referral_code'   => 'DEMO_REF',
 			'commission_rate' => 15.00,
 			'status'          => 'active'
+		) );
+		$affiliate_id = $wpdb->insert_id;
+
+		// Sample Community Posts
+		$wpdb->insert( "{$wpdb->prefix}edu_community_posts", array(
+			'user_id'   => $instructor_id,
+			'content'   => 'Welcome everyone to the Mastering Digital Entrepreneurship course!',
+			'course_id' => 0,
+			'is_pinned' => 1
+		) );
+
+		$wpdb->insert( "{$wpdb->prefix}edu_community_posts", array(
+			'user_id'   => $student_id,
+			'content'   => 'I am so excited to start learning. Who else is in?',
+			'course_id' => 0
+		) );
+
+		// Sample Commissions
+		$wpdb->insert( "{$wpdb->prefix}edu_commissions", array(
+			'affiliate_id' => $affiliate_id,
+			'order_id'     => $order_id,
+			'amount'       => 29.99,
+			'status'       => 'unpaid'
 		) );
 	}
 }

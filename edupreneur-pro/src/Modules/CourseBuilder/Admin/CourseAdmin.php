@@ -28,14 +28,20 @@ class CourseAdmin {
 			echo '<a href="' . admin_url( 'admin.php?page=edu-dashboard' ) . '" class="edu-btn">' . esc_html__( 'View Sales Reports', 'edupreneur-pro' ) . '</a></div>';
 			echo '</div></div>';
 		} elseif ( current_user_can( 'view_edu_affiliate_dashboard' ) ) {
-			$aff_module = new \EdupreneurPro\Modules\Affiliate\AffiliateModule( \EdupreneurPro::instance()->container );
-			$aff_module->render_affiliate_dashboard();
+			$aff_module = \EdupreneurPro::instance()->container->get( 'module_affiliate' );
+			if ( $aff_module ) {
+				$aff_module->render_affiliate_dashboard();
+			}
 		} elseif ( current_user_can( 'view_edu_courses' ) ) {
-			$dash_module = new \EdupreneurPro\Modules\Dashboard\DashboardModule( \EdupreneurPro::instance()->container );
-			$dash_module->render_my_courses_page();
+			$dash_module = \EdupreneurPro::instance()->container->get( 'module_dashboard' );
+			if ( $dash_module ) {
+				$dash_module->render_my_courses_page();
+			}
 		} else {
-			$dash_module = new \EdupreneurPro\Modules\Dashboard\DashboardModule( \EdupreneurPro::instance()->container );
-			$dash_module->render_help_page();
+			$dash_module = \EdupreneurPro\instance()->container->get( 'module_dashboard' );
+			if ( $dash_module ) {
+				$dash_module->render_help_page();
+			}
 		}
 	}
 	public function render_courses_page() {

@@ -75,6 +75,21 @@ class AffiliateModule implements ModuleInterface {
 
 		echo '<div class="edu-card"><h3>' . esc_html__( 'Conversions', 'edupreneur-pro' ) . '</h3>';
 		echo '<div class="edu-stat-val">' . intval( $stats['conversions'] ) . '</div></div>';
+		echo '</div>';
+
+		global $wpdb;
+		$commissions = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}edu_commissions WHERE affiliate_id = (SELECT id FROM {$wpdb->prefix}edu_affiliates WHERE user_id = %d) ORDER BY created_at DESC LIMIT 5", get_current_user_id() ) );
+
+		echo '<div class="edu-card" style="margin-top:20px;"><h3>' . esc_html__( 'Recent Referral Activity', 'edupreneur-pro' ) . '</h3>';
+		if ( empty( $commissions ) ) {
+			echo '<p>' . esc_html__( 'No referrals recorded yet. Start sharing your link to earn!', 'edupreneur-pro' ) . '</p>';
+		} else {
+			echo '<table class="wp-list-table widefat fixed striped"><thead><tr><th>Date</th><th>Amount</th><th>Status</th></tr></thead><tbody>';
+			foreach ( $commissions as $comm ) {
+				echo "<tr><td>{$comm->created_at}</td><td>\${$comm->amount}</td><td>{$comm->status}</td></tr>";
+			}
+			echo '</tbody></table>';
+		}
 		echo '</div></div>';
 	}
 	public function register_routes() {
