@@ -21,6 +21,9 @@ class ModuleController extends WP_REST_Controller {
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_items' ),
 				'permission_callback' => function() { return current_user_can( 'read' ); },
+				'args'                => array(
+					'course_id' => array( 'required' => true, 'sanitize_callback' => 'absint' ),
+				),
 			),
 			array(
 				'methods'             => WP_REST_Server::CREATABLE,

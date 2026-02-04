@@ -83,14 +83,14 @@ class LessonController extends WP_REST_Controller {
 	}
 
 	public function get_items( $request ) {
-		$course_id = intval( $request['course_id'] );
+		$course_id = $request->get_param( 'course_id' );
+		$module_id = $request->get_param( 'module_id' );
 
-		if ( $request->has_param( 'module_id' ) ) {
-			$module_id = $request->get_param( 'module_id' );
-			return new WP_REST_Response( $this->repository->get_by_module( $course_id, intval( $module_id ) ), 200 );
+		if ( null !== $module_id ) {
+			return new WP_REST_Response( $this->repository->get_by_module( intval( $course_id ), intval( $module_id ) ), 200 );
 		}
 
-		return new WP_REST_Response( $this->repository->get_by_course( $course_id ), 200 );
+		return new WP_REST_Response( $this->repository->get_by_course( intval( $course_id ) ), 200 );
 	}
 
 	public function create_item( $request ) {

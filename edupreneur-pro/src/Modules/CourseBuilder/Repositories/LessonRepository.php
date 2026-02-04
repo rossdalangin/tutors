@@ -17,6 +17,9 @@ class LessonRepository {
 	}
 	public function get_by_module( $course_id, $module_id ) {
 		global $wpdb;
+		if ( 0 === (int) $module_id ) {
+			return $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$this->table} WHERE course_id = %d AND (module_id = 0 OR module_id IS NULL) ORDER BY order_index ASC", $course_id ) );
+		}
 		return $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$this->table} WHERE course_id = %d AND module_id = %d ORDER BY order_index ASC", $course_id, $module_id ) );
 	}
 	public function create( $data ) {
