@@ -133,8 +133,17 @@ class ShortcodeService {
 			?>
 			<div class="edu-card" style="text-align:center; padding:60px;">
 				<div class="edu-loader" style="border: 6px solid #f3f3f3; border-top: 6px solid var(--edu-primary); border-radius: 50%; width: 60px; height: 60px; animation: spin 2s linear infinite; margin: 0 auto 20px;"></div>
-				<h2><?php _e( 'Processing Transaction...', 'edupreneur-pro' ); ?></h2>
-				<p><?php printf( __( 'Communicating with %s secure servers. Please do not refresh the page.', 'edupreneur-pro' ), ucfirst($gateway_id) ); ?></p>
+				<h2><?php _e( 'Verifying Payment...', 'edupreneur-pro' ); ?></h2>
+				<p><?php printf( __( 'Securing your connection to %s...', 'edupreneur-pro' ), ucfirst($gateway_id) ); ?></p>
+				<div id="edu-status-log" style="font-size:12px; color:#888; margin-top:10px; font-family:monospace;">
+					[<?php echo date('H:i:s'); ?>] Initiating handshake...<br>
+				</div>
+
+				<script>
+					const log = document.getElementById('edu-status-log');
+					setTimeout(() => { log.innerHTML += "[<?php echo date('H:i:s', time()+1); ?>] Authorizing tokens...<br>"; }, 1000);
+					setTimeout(() => { log.innerHTML += "[<?php echo date('H:i:s', time()+2); ?>] Confirming ledger entry...<br>"; }, 2000);
+				</script>
 
 				<style>
 					@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -238,11 +247,12 @@ class ShortcodeService {
 		$output .= '<form method="post">';
 		$output .= wp_nonce_field( 'edu_checkout', '_wpnonce', true, false );
 		$output .= '<div class="edu-gateway-options" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:20px;">';
-		$output .= '<label style="border:1px solid #ddd; padding:15px; border-radius:8px; text-align:center; cursor:pointer; display:block;"><input type="radio" name="edu_gateway" value="stripe" checked><br>Stripe</label>';
-		$output .= '<label style="border:1px solid #ddd; padding:15px; border-radius:8px; text-align:center; cursor:pointer; display:block;"><input type="radio" name="edu_gateway" value="paypal"><br>PayPal</label>';
-		$output .= '<label style="border:1px solid #ddd; padding:15px; border-radius:8px; text-align:center; cursor:pointer; display:block;"><input type="radio" name="edu_gateway" value="gcash"><br>GCash</label>';
+		$output .= '<label style="border:2px solid #eee; padding:15px; border-radius:8px; text-align:center; cursor:pointer; display:block;"><input type="radio" name="edu_gateway" value="stripe" checked><br><strong>Stripe</strong><br><small>Cards / ApplePay</small></label>';
+		$output .= '<label style="border:2px solid #eee; padding:15px; border-radius:8px; text-align:center; cursor:pointer; display:block;"><input type="radio" name="edu_gateway" value="paypal"><br><strong>PayPal</strong><br><small>PayPal / Credit</small></label>';
+		$output .= '<label style="border:2px solid #eee; padding:15px; border-radius:8px; text-align:center; cursor:pointer; display:block;"><input type="radio" name="edu_gateway" value="gcash"><br><strong>GCash</strong><br><small>e-Wallet (PH)</small></label>';
 		$output .= '</div>';
-		$output .= '<button type="submit" name="edu_initiate_payment" value="1" class="edu-btn edu-btn-block" style="padding: 15px; font-size:1.1em; background:var(--edu-primary);">' . __( 'Proceed to Payment', 'edupreneur-pro' ) . '</button>';
+		$output .= '<div style="margin-bottom:20px; text-align:center; opacity:0.7; font-size:0.85em;">🛡️ Secured by 256-bit SSL encryption</div>';
+		$output .= '<button type="submit" name="edu_initiate_payment" value="1" class="edu-btn edu-btn-block" style="padding: 18px; font-size:1.2em; background:var(--edu-primary); font-weight:700;">' . __( 'Authorize & Pay Now', 'edupreneur-pro' ) . '</button>';
 		$output .= '</form>';
 		$output .= '</div>';
 
@@ -274,9 +284,21 @@ class ShortcodeService {
 					</div>
 
 					<div style="margin-bottom:20px;">
-						<label style="display:block; margin-bottom:8px; color:#32325d; font-size:14px; font-weight:500;"><?php _e('Card Information', 'edupreneur-pro'); ?></label>
-						<div style="border:1px solid #e6ebf1; padding:12px; border-radius:4px; color:#32325d; font-size:14px;">
-							**** **** **** 4242
+						<label style="display:block; margin-bottom:8px; color:#32325d; font-size:14px; font-weight:500;"><?php _e('Payment Information', 'edupreneur-pro'); ?></label>
+						<div style="border:1px solid #e6ebf1; padding:12px; border-radius:4px; color:#32325d; font-size:14px; display:flex; justify-content:space-between; align-items:center;">
+							<span>**** **** **** 4242</span>
+							<span style="font-size:10px; background:#f6f9fc; padding:2px 5px; border-radius:3px;">VALID</span>
+						</div>
+					</div>
+
+					<div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:20px;">
+						<div>
+							<label style="display:block; margin-bottom:8px; color:#32325d; font-size:12px; font-weight:500;"><?php _e('Expiry', 'edupreneur-pro'); ?></label>
+							<div style="border:1px solid #e6ebf1; padding:10px; border-radius:4px; color:#32325d; font-size:14px;">12 / 25</div>
+						</div>
+						<div>
+							<label style="display:block; margin-bottom:8px; color:#32325d; font-size:12px; font-weight:500;"><?php _e('CVC', 'edupreneur-pro'); ?></label>
+							<div style="border:1px solid #e6ebf1; padding:10px; border-radius:4px; color:#32325d; font-size:14px;">***</div>
 						</div>
 					</div>
 

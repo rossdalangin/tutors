@@ -84,10 +84,10 @@ class LessonController extends WP_REST_Controller {
 
 	public function get_items( $request ) {
 		$course_id = intval( $request['course_id'] );
-		$params = $request->get_params();
 
-		if ( array_key_exists( 'module_id', $params ) ) {
-			return new WP_REST_Response( $this->repository->get_by_module( $course_id, intval( $params['module_id'] ) ), 200 );
+		if ( $request->has_param( 'module_id' ) ) {
+			$module_id = $request->get_param( 'module_id' );
+			return new WP_REST_Response( $this->repository->get_by_module( $course_id, intval( $module_id ) ), 200 );
 		}
 
 		return new WP_REST_Response( $this->repository->get_by_course( $course_id ), 200 );
@@ -105,8 +105,24 @@ class LessonController extends WP_REST_Controller {
 		);
 		$id = $this->repository->create( $data );
 
+		global $wpdb;
+		if ( isset( $request['quiz_data'] ) && ! empty( $request['quiz_data'] ) ) {
+			$wpdb->insert( "{$wpdb->prefix}edu_quizzes", array(
+				'lesson_id' => $id,
+				'title'     => 'Quiz for ' . $data['title'],
+				'questions' => sanitize_textarea_field( $request['quiz_data'] )
+			) );
+		}
+
+		if ( isset( $request['assignment_data'] ) && ! empty( $request['assignment_data'] ) ) {
+			$wpdb->insert( "{$wpdb->prefix}edu_assignments", array(
+				'lesson_id'    => $id,
+				'title'        => 'Assignment for ' . $data['title'],
+				'instructions' => sanitize_textarea_field( $request['assignment_data'] )
+			) );
+		}
+
 		if ( isset( $request['resources'] ) && is_array( $request['resources'] ) ) {
-			global $wpdb;
 			foreach ( $request['resources'] as $res ) {
 				$wpdb->insert( "{$wpdb->prefix}edu_resources", array(
 					'lesson_id' => $id,
