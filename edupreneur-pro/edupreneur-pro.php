@@ -45,8 +45,10 @@ final class EdupreneurPro {
 		$this->init_modules();
 		add_action( 'plugins_loaded', array( $this, 'on_plugins_loaded' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_frontend_assets' ) );
 		add_action( 'init', array( $this, 'track_affiliate_referral' ) );
 		add_action( 'init', array( $this, 'handle_lesson_completion' ) );
+		add_action( 'init', array( $this, 'handle_course_redirects' ) );
 		add_action( 'admin_init', array( $this, 'ensure_admin_capabilities' ) );
 		add_shortcode( 'edu_student_dashboard', array( $this, 'render_student_dashboard' ) );
 		add_filter( 'the_content', array( $this, 'handle_lesson_display' ) );
@@ -73,6 +75,18 @@ final class EdupreneurPro {
 
 			wp_safe_redirect( add_query_arg( array( 'edu_lesson' => $lesson_id, 'completed' => 1 ), wp_get_referer() ) );
 			exit;
+		}
+	}
+
+	public function handle_course_redirects() {
+		global $wpdb;
+		if ( isset( $_GET['edu_course_id'] ) && is_user_logged_in() && ! isset( $_GET['edu_lesson'] ) ) {
+			$course_id = intval( $_GET['edu_course_id'] );
+			$next_lesson = $wpdb->get_var( $wpdb->prepare( "SELECT l.id FROM {$wpdb->prefix}edu_lessons l LEFT JOIN {$wpdb->prefix}edu_progress p ON l.id = p.lesson_id AND p.student_id = %d WHERE l.course_id = %d AND (p.completed IS NULL OR p.completed = 0) ORDER BY l.order_index ASC LIMIT 1", get_current_user_id(), $course_id ) );
+			if ( $next_lesson ) {
+				wp_safe_redirect( add_query_arg( 'edu_lesson', $next_lesson ) );
+				exit;
+			}
 		}
 	}
 
@@ -115,6 +129,9 @@ final class EdupreneurPro {
 		$lesson = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}edu_lessons WHERE id = %d", $lesson_id ) );
 
 		if ( ! $lesson ) {
+			if ( is_admin() ) {
+				return '<div class="edu-card edu-error"><h3>' . esc_html__( 'Lesson Not Found', 'edupreneur-pro' ) . '</h3><p>' . esc_html__( 'The requested lesson could not be found. Please return to the dashboard and try again.', 'edupreneur-pro' ) . '</p></div>';
+			}
 			return $content;
 		}
 
@@ -153,12 +170,20 @@ final class EdupreneurPro {
 			echo '</ul></div>';
 		}
 
-		// Mark as complete button
-		echo '<form method="post" style="margin-top:30px;">';
+		// Navigation and Completion
+		$next_lesson_id = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}edu_lessons WHERE course_id = %d AND order_index > %d ORDER BY order_index ASC LIMIT 1", $lesson->course_id, $lesson->order_index ) );
+
+		echo '<div style="margin-top:40px; display:flex; gap:20px; align-items:center;">';
+		echo '<form method="post">';
 		wp_nonce_field( 'edu_complete_lesson' );
 		echo '<input type="hidden" name="lesson_to_complete" value="' . $lesson_id . '">';
-		echo '<button type="submit" class="edu-btn">' . esc_html__( 'Mark as Completed', 'edupreneur-pro' ) . '</button>';
+		echo '<button type="submit" class="edu-btn" style="background:var(--edu-success);">' . esc_html__( 'Mark as Completed', 'edupreneur-pro' ) . '</button>';
 		echo '</form>';
+
+		if ( $next_lesson_id ) {
+			echo '<a href="' . add_query_arg( 'edu_lesson', $next_lesson_id, $back_url ) . '" class="edu-btn" style="background:var(--edu-secondary);">' . esc_html__( 'Next Lesson →', 'edupreneur-pro' ) . '</a>';
+		}
+		echo '</div>';
 
 		echo '</div>';
 		return ob_get_clean();
@@ -284,6 +309,17 @@ final class EdupreneurPro {
 			}
 			echo '</div>';
 		}
+
+		$is_affiliate = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}edu_affiliates WHERE user_id = %d", $student_id ) );
+		if ( ! $is_affiliate ) {
+			echo '<div class="edu-card" style="margin-top:40px; background:linear-gradient(to right, #6a11cb 0%, #2575fc 100%); color:#fff; border:none;">';
+			echo '<h3 style="color:#fff;">' . esc_html__( 'Earn While You Learn!', 'edupreneur-pro' ) . '</h3>';
+			echo '<p>' . esc_html__( 'Join our affiliate program and earn commissions for every student you refer to our platform.', 'edupreneur-pro' ) . '</p>';
+			echo '<button id="student-join-affiliate" class="edu-btn" style="background:#fff; color:#2575fc; font-weight:700;">' . esc_html__( 'Become an Affiliate', 'edupreneur-pro' ) . '</button>';
+			echo '<script>jQuery("#student-join-affiliate").click(function(){ jQuery.post(eduApi.root + "edupreneur/v1/affiliates/register", { _wpnonce: eduApi.nonce }, function(){ location.reload(); }); });</script>';
+			echo '</div>';
+		}
+
 		echo '</div>';
 		return ob_get_clean();
 	}
@@ -296,6 +332,13 @@ final class EdupreneurPro {
 			$duration = get_option( 'edu_affiliate_cookie_duration', 30 );
 			setcookie( 'edu_affiliate', sanitize_text_field( $_GET['ref'] ), time() + ( $duration * DAY_IN_SECONDS ), COOKIEPATH, COOKIE_DOMAIN );
 		}
+	}
+
+	/**
+	 * Enqueue frontend assets.
+	 */
+	public function enqueue_frontend_assets() {
+		wp_enqueue_style( 'edu-frontend-css', plugin_dir_url( __FILE__ ) . 'assets/css/admin.css', array(), EDUPRENEUR_PRO_VERSION );
 	}
 
 	/**

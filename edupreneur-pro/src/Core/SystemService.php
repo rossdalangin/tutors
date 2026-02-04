@@ -56,7 +56,7 @@ class SystemService {
 			'description' => 'A comprehensive guide to building a scalable online business from scratch.',
 			'category'    => 'Business',
 			'price'       => 199.99,
-			'status'      => 'published',
+			'status'      => 'publish',
 			'instructor_id' => $instructor_id
 		) );
 		$course_id = $wpdb->insert_id;

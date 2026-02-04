@@ -3,25 +3,26 @@ namespace EdupreneurPro\Modules\CourseBuilder\Services;
 
 class ShortcodeService {
 	public function init() {
-		add_shortcode( 'edu_course', array( $this, 'render_course_card' ) );
+		add_shortcode( 'edu_course', array( $this, 'render_course_card_shortcode' ) );
 		add_shortcode( 'edu_recent_courses', array( $this, 'render_recent_courses' ) );
 		add_shortcode( 'edu_categories', array( $this, 'render_categories' ) );
 		add_shortcode( 'edu_homepage', array( $this, 'render_homepage' ) );
 		add_shortcode( 'edu_checkout', array( $this, 'render_checkout' ) );
 	}
 
-	public function render_course_card( $atts ) {
+	public function render_course_card_shortcode( $atts ) {
 		$atts = shortcode_atts( array( 'id' => 0 ), $atts );
 		global $wpdb;
 		$course = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}edu_courses WHERE id = %d", $atts['id'] ) );
-		if ( ! $course ) return '';
+		if ( ! $course ) return '<p>' . __( 'Course not found.', 'edupreneur-pro' ) . '</p>';
 
 		return $this->get_course_html( $course );
 	}
 
-	public function render_recent_courses() {
+	public function render_recent_courses( $atts ) {
+		$atts = shortcode_atts( array( 'limit' => 10 ), $atts );
 		global $wpdb;
-		$courses = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}edu_courses WHERE status = 'publish' ORDER BY created_at DESC LIMIT 10" );
+		$courses = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}edu_courses WHERE status = 'publish' ORDER BY created_at DESC LIMIT %d", $atts['limit'] ) );
 
 		$output = '<div class="edu-grid">';
 		foreach ( $courses as $course ) {
@@ -36,13 +37,18 @@ class ShortcodeService {
 		$categories = $wpdb->get_results( "SELECT DISTINCT category FROM {$wpdb->prefix}edu_courses WHERE status = 'publish'" );
 		$base_url = ( is_admin() && isset( $_GET['page'] ) ) ? admin_url( 'admin.php?page=' . sanitize_text_field( $_GET['page'] ) ) : get_permalink();
 
+		if ( empty( $categories ) ) {
+			return '<p>' . __( 'No categories found.', 'edupreneur-pro' ) . '</p>';
+		}
+
 		$output = '<div class="edu-grid">';
 		foreach ( $categories as $cat ) {
 			$cat_name = $cat->category ?: 'General';
 			$output .= '<div class="edu-card">';
+			$output .= '<div style="font-size: 2em; margin-bottom:10px;">📂</div>';
 			$output .= '<h3>' . esc_html( $cat_name ) . '</h3>';
-			$output .= '<p>' . sprintf( __( 'Explore all our %s courses.', 'edupreneur-pro' ), esc_html( $cat_name ) ) . '</p>';
-			$output .= '<a href="' . add_query_arg( 'edu_category', $cat_name, $base_url ) . '" class="edu-btn">' . __( 'View Category', 'edupreneur-pro' ) . '</a>';
+			$output .= '<p>' . sprintf( __( 'Master your skills in %s. Join thousands of students today.', 'edupreneur-pro' ), esc_html( $cat_name ) ) . '</p>';
+			$output .= '<a href="' . add_query_arg( 'edu_category', $cat_name, $base_url ) . '" class="edu-btn edu-btn-block">' . __( 'View Courses', 'edupreneur-pro' ) . '</a>';
 			$output .= '</div>';
 		}
 		$output .= '</div>';
@@ -50,15 +56,29 @@ class ShortcodeService {
 	}
 
 	public function render_homepage() {
-		$output = '<div class="edu-homepage-hero" style="text-align:center; padding: 50px 20px; background: #f0f4f8; border-radius: 12px; margin-bottom: 40px;">';
-		$output .= '<h1>' . __( 'Master New Skills with EdupreneurPro', 'edupreneur-pro' ) . '</h1>';
-		$output .= '<p style="font-size: 1.2em;">' . __( 'The ultimate platform for professional learning and growth.', 'edupreneur-pro' ) . '</p>';
+		$output = '<div class="edu-homepage-hero" style="text-align:center; padding: 80px 20px; background: linear-gradient(135deg, var(--edu-primary) 0%, #2c3e50 100%); color: #fff; border-radius: 12px; margin-bottom: 50px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">';
+		$output .= '<h1 style="font-size: 3em; margin-bottom: 20px; color: #fff;">' . __( 'Your Future Starts Here', 'edupreneur-pro' ) . '</h1>';
+		$output .= '<p style="font-size: 1.4em; max-width: 800px; margin: 0 auto 30px; opacity: 0.9;">' . __( 'The all-in-one platform for professional education. High-quality courses, a thriving community, and expert instructors.', 'edupreneur-pro' ) . '</p>';
+		$output .= '<a href="#featured" class="edu-btn" style="background:#fff; color:var(--edu-primary); padding: 15px 40px; font-weight: 700; font-size: 1.1em;">' . __( 'Get Started Today', 'edupreneur-pro' ) . '</a>';
 		$output .= '</div>';
 
-		$output .= '<h2>' . __( 'Featured Courses', 'edupreneur-pro' ) . '</h2>';
-		$output .= $this->render_recent_courses();
+		$output .= '<h2 id="featured" style="text-align:center; margin-bottom: 40px; font-size: 2.2em;">' . __( 'Explore Featured Courses', 'edupreneur-pro' ) . '</h2>';
+		$output .= $this->render_recent_courses( array( 'limit' => 6 ) );
 
-		$output .= '<h2 style="margin-top:40px;">' . __( 'Browse by Category', 'edupreneur-pro' ) . '</h2>';
+		$output .= '<div style="margin-top: 60px; padding: 60px 40px; background: #f8f9fa; border-radius: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 40px;">';
+		$output .= '<div style="flex: 1; min-width: 300px;">';
+		$output .= '<h2 style="font-size: 2.5em; margin-top: 0;">' . __( 'Empower Your Business Through Education', 'edupreneur-pro' ) . '</h2>';
+		$output .= '<p style="font-size: 1.2em; color: #555; margin-bottom: 30px;">' . __( 'Scale from one tutor to thousands of students with our all-in-one modular system. No third-party plugins required.', 'edupreneur-pro' ) . '</p>';
+		$output .= '<ul style="list-style: none; padding: 0;">';
+		$output .= '<li style="margin-bottom: 15px; font-size: 1.1em; font-weight: 500;">🚀 ' . __( 'Integrated Course Builder with Drag-and-Drop.', 'edupreneur-pro' ) . '</li>';
+		$output .= '<li style="margin-bottom: 15px; font-size: 1.1em; font-weight: 500;">💳 ' . __( 'Multi-Gateway Payments (Stripe, PayPal, GCash).', 'edupreneur-pro' ) . '</li>';
+		$output .= '<li style="margin-bottom: 15px; font-size: 1.1em; font-weight: 500;">🤝 ' . __( 'Built-in Affiliate Marketing and Community Boards.', 'edupreneur-pro' ) . '</li>';
+		$output .= '</ul></div>';
+		$output .= '<div style="flex: 1; min-width: 300px; text-align: center;"><div style="background:var(--edu-primary); color:#fff; width:100%; height:300px; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;">';
+		$output .= '<span style="font-size: 5em;">📊</span><h3 style="color:#fff;">' . __( 'Real-Time Insights', 'edupreneur-pro' ) . '</h3></div></div>';
+		$output .= '</div>';
+
+		$output .= '<h2 style="text-align:center; margin: 60px 0 40px; font-size: 2.2em;">' . __( 'Browse by Category', 'edupreneur-pro' ) . '</h2>';
 		$output .= $this->render_categories();
 
 		return $output;
@@ -66,7 +86,7 @@ class ShortcodeService {
 
 	public function render_checkout() {
 		if ( ! is_user_logged_in() ) {
-			return '<p>' . __( 'Please log in to complete your purchase.', 'edupreneur-pro' ) . '</p>';
+			return '<div class="edu-card" style="text-align:center; padding: 40px;"><h3>' . __( 'Account Required', 'edupreneur-pro' ) . '</h3><p>' . __( 'Please log in or create an account to complete your purchase.', 'edupreneur-pro' ) . '</p><a href="' . wp_login_url( get_permalink() ) . '" class="edu-btn">' . __( 'Login to Continue', 'edupreneur-pro' ) . '</a></div>';
 		}
 
 		if ( ! isset( $_GET['buy_course'] ) ) {
@@ -97,18 +117,38 @@ class ShortcodeService {
 				'status'     => 'active'
 			) );
 
-			return '<div class="updated"><p>' . __( 'Purchase successful! You are now enrolled.', 'edupreneur-pro' ) . '</p><a href="' . $base_url . '" class="edu-btn">' . __( 'Go to Dashboard', 'edupreneur-pro' ) . '</a></div>';
+			// Check for affiliate cookie
+			if ( isset( $_COOKIE['edu_affiliate'] ) ) {
+				$ref_code = sanitize_text_field( $_COOKIE['edu_affiliate'] );
+				$affiliate = $wpdb->get_row( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}edu_affiliates WHERE referral_code = %s AND status = 'active'", $ref_code ) );
+				if ( $affiliate ) {
+					$aff_manager = new \EdupreneurPro\Modules\Affiliate\Services\AffiliateManager();
+					$aff_manager->record_commission( $affiliate->id, $order_id, $course->price );
+				}
+			}
+
+			$output = '<div class="edu-card" style="text-align:center; border:2px solid #28a745; padding:40px;">';
+			$output .= '<div style="font-size: 4em; color:#28a745; margin-bottom:20px;">🎉</div>';
+			$output .= '<h2>' . __( 'Registration Successful!', 'edupreneur-pro' ) . '</h2>';
+			$output .= '<p>' . __( 'You have been enrolled in the course. Start your learning journey now.', 'edupreneur-pro' ) . '</p>';
+			$output .= '<a href="' . add_query_arg( 'edu_course_id', $course_id, $base_url ) . '" class="edu-btn" style="margin-top:20px; padding: 12px 40px;">' . __( 'Go to My Course', 'edupreneur-pro' ) . '</a>';
+			$output .= '</div>';
+			return $output;
 		}
 
-		$output = '<div class="edu-card" style="max-width: 500px; margin: 0 auto;">';
-		$output .= '<h2>' . __( 'Secure Checkout', 'edupreneur-pro' ) . '</h2>';
-		$output .= '<p><strong>' . __( 'Course:', 'edupreneur-pro' ) . '</strong> ' . esc_html( $course->title ) . '</p>';
-		$output .= '<p><strong>' . __( 'Price:', 'edupreneur-pro' ) . '</strong> $' . number_format( $course->price, 2 ) . '</p>';
+		$output = '<div class="edu-card" style="max-width: 600px; margin: 40px auto; padding: 40px;">';
+		$output .= '<h2 style="margin-top:0;">' . __( 'Complete Your Enrollment', 'edupreneur-pro' ) . '</h2>';
+		$output .= '<div style="background:#f8f9fa; padding:20px; border-radius:8px; margin-bottom:30px;">';
+		$output .= '<div style="display:flex; justify-content:space-between; margin-bottom:10px;"><strong>' . __( 'Course Title:', 'edupreneur-pro' ) . '</strong><span>' . esc_html( $course->title ) . '</span></div>';
+		$output .= '<div style="display:flex; justify-content:space-between; font-size:1.2em; border-top:1px solid #ddd; padding-top:10px;"><strong>' . __( 'Total Due:', 'edupreneur-pro' ) . '</strong><span style="color:var(--edu-primary); font-weight:700;">$' . number_format( $course->price, 2 ) . '</span></div>';
+		$output .= '</div>';
+
+		$output .= '<p class="edu-caption" style="margin-bottom:20px;">' . __( 'Select a payment method below. This is a simulated checkout for demonstration purposes.', 'edupreneur-pro' ) . '</p>';
 
 		$output .= '<form method="post">';
 		$output .= wp_nonce_field( 'edu_checkout', '_wpnonce', true, false );
 		$output .= '<input type="hidden" name="edu_confirm_purchase" value="1">';
-		$output .= '<button type="submit" class="edu-btn edu-btn-block">' . __( 'Complete Purchase (Simulated)', 'edupreneur-pro' ) . '</button>';
+		$output .= '<button type="submit" class="edu-btn edu-btn-block" style="padding: 15px; font-size:1.1em; background:#28a745;">' . __( 'Pay Securely (Simulated)', 'edupreneur-pro' ) . '</button>';
 		$output .= '</form>';
 		$output .= '</div>';
 
@@ -118,11 +158,14 @@ class ShortcodeService {
 	private function get_course_html( $course ) {
 		$base_url = ( is_admin() && isset( $_GET['page'] ) ) ? admin_url( 'admin.php?page=' . sanitize_text_field( $_GET['page'] ) ) : get_permalink();
 		$output = '<div class="edu-card">';
+		$output .= '<div style="height: 150px; background: #eee; border-radius: 6px; margin-bottom: 15px; display:flex; align-items:center; justify-content:center; font-size: 3em;">📘</div>';
+		$output .= '<span class="tag" style="background:var(--edu-primary); color:#fff; border:none; margin-bottom:10px;">' . esc_html( $course->category ?: 'General' ) . '</span>';
 		$output .= '<h3>' . esc_html( $course->title ) . '</h3>';
 		$output .= '<p>' . esc_html( wp_trim_words( $course->description, 15 ) ) . '</p>';
-		$output .= '<div style="margin-top:15px; display:flex; gap:10px;">';
-		$output .= '<a href="' . add_query_arg( 'edu_course_id', $course->id, $base_url ) . '" class="edu-btn">' . __( 'Sales Page', 'edupreneur-pro' ) . '</a>';
-		$output .= '<a href="' . add_query_arg( 'buy_course', $course->id, $base_url ) . '" class="edu-btn" style="background:#28a745;">' . __( 'Buy Now', 'edupreneur-pro' ) . '</a>';
+		$output .= '<div style="font-weight:700; color:var(--edu-primary); margin: 15px 0; font-size: 1.2em;">$' . number_format( $course->price, 2 ) . '</div>';
+		$output .= '<div style="margin-top:auto; display:flex; gap:10px;">';
+		$output .= '<a href="' . add_query_arg( 'edu_course_id', $course->id, $base_url ) . '" class="edu-btn" style="flex:1;">' . __( 'Info', 'edupreneur-pro' ) . '</a>';
+		$output .= '<a href="' . add_query_arg( 'buy_course', $course->id, $base_url ) . '" class="edu-btn" style="background:#28a745; flex:1;">' . __( 'Enroll', 'edupreneur-pro' ) . '</a>';
 		$output .= '</div>';
 		$output .= '</div>';
 		return $output;

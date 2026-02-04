@@ -15,31 +15,31 @@ Go to **EdupreneurPro → Manage Courses**.
 7. Drag and drop items by the handle (⠿) to reorder them.
 
 ## 3. Student Experience
-Students access their courses via the `[edu_student_dashboard]` shortcode.
+Students access their courses via the `[edu_student_dashboard]` shortcode or the **My Courses** admin menu.
 Clicking a lesson in the dashboard opens the **Lesson Player**.
 Students can watch videos, read content, download resources, and click **Mark as Completed** to track their progress.
 
-## 3. Managing Students
+## 4. Managing Students
 Go to **EdupreneurPro → Students** to see a list of all enrollments. You can manually unenroll students if necessary.
 
-## 4. Financials and Orders
-The **Business Dashboard** gives you a bird's eye view of your revenue.
+## 5. Financials and Orders
+The **Business Dashboard** gives you a bird's eye view of your revenue, including Net Profit and Average Order Value.
 Go to **EdupreneurPro → Orders** to see detailed transaction history.
 
-## 5. Affiliate Program
-Users can register as affiliates via your front-end.
-You can manage them under **EdupreneurPro → Affiliates**, where you can adjust their commission rates or change their status.
+## 6. Affiliate Program
+Users can register as affiliates via the **Join Affiliate Program** button in their dashboard.
+You can manage them under **EdupreneurPro → Affiliates**, where you can adjust their commission rates or mark pending commissions as "Paid".
 
-## 6. Community Engagement
-Every course comes with a built-in discussion board. Students can post questions and tutors can pin important announcements.
+## 7. Community Engagement
+Every course comes with a built-in discussion board. Students can post questions and tutors can pin important announcements via the **Community** management tab.
 Direct messaging is supported for private 1-on-1 support.
 
-## 7. Shortcodes Reference
+## 8. Shortcodes Reference
 Use these shortcodes to build your sales pages and student portals:
 
 - `[edu_homepage]`: The best landing page to showcase all your featured courses and categories.
-- `[edu_recent_courses]`: Displays a grid of the 10 most recently published courses.
+- `[edu_recent_courses limit="10"]`: Displays a grid of the 10 most recently published courses.
 - `[edu_categories]`: Displays all course categories with links to their respective lists.
-- `[edu_course id="123"]`: Displays a specific course card (replace 123 with your course ID).
+- `[edu_course id="123"]`: Displays a specific course card with "Info" and "Enroll" buttons (replace 123 with your course ID).
 - `[edu_student_dashboard]`: The primary learning portal for logged-in students to see their progress.
-- `[edu_checkout]`: Place this on a "Checkout" page to handle simulated course purchases.
+- `[edu_checkout]`: Essential! Place this shortcode on a page named "Checkout" to handle course payments and enrollments.
