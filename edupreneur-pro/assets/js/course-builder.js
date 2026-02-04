@@ -53,6 +53,10 @@
                                     <option value="0">General</option>
                                 </select>
                             </div>
+                            <div class="edu-form-group" id="course-price-group" style="display:none;">
+                                <label>Price ($)</label>
+                                <input type="number" id="course-price" step="0.01" min="0" value="0.00">
+                            </div>
                             <div class="edu-form-group" id="desc-group">
                                 <label>Description</label>
                                 <textarea id="entity-desc" placeholder="Describe the learning objective..."></textarea>
@@ -197,15 +201,18 @@
                 $('#lesson-settings').show();
                 $('#desc-group').show();
                 $('#course-category-group').hide();
+                $('#course-price-group').hide();
                 this.toggleLessonExtraFields();
             } else if (type === 'module') {
                 $('#lesson-settings').hide();
                 $('#desc-group').hide();
                 $('#course-category-group').hide();
+                $('#course-price-group').hide();
             } else {
                 $('#lesson-settings').hide();
                 $('#desc-group').show();
                 $('#course-category-group').show();
+                $('#course-price-group').show();
                 this.fetchCategories().then(cats => {
                     const $sel = $('#course-category').empty();
                     $sel.append('<option value="0">General</option>');
@@ -234,6 +241,7 @@
                     if (type === 'course') {
                         this.currentCourseCategory = data.category_id || 0;
                         $('#course-category').val(this.currentCourseCategory);
+                        $('#course-price').val(data.price || 0.00);
                     }
                     if (type === 'lesson') {
                         $('#lesson-type').val(data.lesson_type || 'video');
@@ -286,8 +294,9 @@
                         <div class="edu-course-header">
                             <div class="edu-drag-handle">⠿</div>
                             <div style="flex-grow:1;">
-                                <h3 style="margin:0;">${course.title}</h3>
+                                <h3 style="margin:0;">${course.title} <span class="tag" style="font-size:0.6em; vertical-align:middle;">${course.category || 'General'}</span></h3>
                                 <div class="edu-item-actions">
+                                    <span style="font-size:0.8em; color:#666; margin-right:10px;">$${parseFloat(course.price).toFixed(2)}</span>
                                     <span class="edu-edit-course" title="Edit Course">✏️</span>
                                     <span class="edu-delete-course" title="Delete Course">🗑️</span>
                                 </div>
@@ -393,7 +402,10 @@
             if (id && id != 0) url += '/' + id;
 
             let data = { title: title, description: desc };
-            if (type === 'course') data.category_id = $('#course-category').val();
+            if (type === 'course') {
+                data.category_id = $('#course-category').val();
+                data.price = $('#course-price').val();
+            }
             if (type === 'module' && (!id || id == 0)) data.course_id = parentId;
             if (type === 'lesson') {
                 if (!id || id == 0) {

@@ -82,7 +82,15 @@ final class EdupreneurPro {
 		global $wpdb;
 		if ( isset( $_GET['edu_course_id'] ) && is_user_logged_in() && ! isset( $_GET['edu_lesson'] ) ) {
 			$course_id = intval( $_GET['edu_course_id'] );
-			$next_lesson = $wpdb->get_var( $wpdb->prepare( "SELECT l.id FROM {$wpdb->prefix}edu_lessons l LEFT JOIN {$wpdb->prefix}edu_progress p ON l.id = p.lesson_id AND p.student_id = %d WHERE l.course_id = %d AND (p.completed IS NULL OR p.completed = 0) ORDER BY l.order_index ASC LIMIT 1", get_current_user_id(), $course_id ) );
+			$student_id = get_current_user_id();
+
+			// Check if enrolled before redirecting
+			$is_enrolled = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}edu_enrollments WHERE student_id = %d AND course_id = %d AND status = 'active'", $student_id, $course_id ) );
+			if ( ! $is_enrolled ) {
+				return;
+			}
+
+			$next_lesson = $wpdb->get_var( $wpdb->prepare( "SELECT l.id FROM {$wpdb->prefix}edu_lessons l LEFT JOIN {$wpdb->prefix}edu_progress p ON l.id = p.lesson_id AND p.student_id = %d WHERE l.course_id = %d AND (p.completed IS NULL OR p.completed = 0) ORDER BY l.order_index ASC LIMIT 1", $student_id, $course_id ) );
 			if ( $next_lesson ) {
 				wp_safe_redirect( add_query_arg( 'edu_lesson', $next_lesson ) );
 				exit;
@@ -111,9 +119,16 @@ final class EdupreneurPro {
 		if ( ! $lesson_id && isset( $_GET['edu_course_id'] ) ) {
 			if ( is_user_logged_in() ) {
 				$course_id = intval( $_GET['edu_course_id'] );
-				$next_lesson = $wpdb->get_var( $wpdb->prepare( "SELECT l.id FROM {$wpdb->prefix}edu_lessons l LEFT JOIN {$wpdb->prefix}edu_progress p ON l.id = p.lesson_id AND p.student_id = %d WHERE l.course_id = %d AND (p.completed IS NULL OR p.completed = 0) ORDER BY l.order_index ASC LIMIT 1", get_current_user_id(), $course_id ) );
-				if ( $next_lesson ) {
-					$lesson_id = $next_lesson;
+				$student_id = get_current_user_id();
+
+				// Check enrollment for logged in users
+				$is_enrolled = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}edu_enrollments WHERE student_id = %d AND course_id = %d AND status = 'active'", $student_id, $course_id ) );
+
+				if ( $is_enrolled ) {
+					$next_lesson = $wpdb->get_var( $wpdb->prepare( "SELECT l.id FROM {$wpdb->prefix}edu_lessons l LEFT JOIN {$wpdb->prefix}edu_progress p ON l.id = p.lesson_id AND p.student_id = %d WHERE l.course_id = %d AND (p.completed IS NULL OR p.completed = 0) ORDER BY l.order_index ASC LIMIT 1", $student_id, $course_id ) );
+					if ( $next_lesson ) {
+						$lesson_id = $next_lesson;
+					}
 				}
 			}
 
@@ -201,6 +216,7 @@ final class EdupreneurPro {
 		echo '<div class="edu-sales-page">';
 		echo '<h1>' . esc_html( $course->title ) . '</h1>';
 		echo '<div class="edu-card" style="margin:20px 0;">';
+		echo '<div style="margin-bottom:10px;"><span class="tag">' . esc_html( $course->category ) . '</span></div>';
 		echo '<p>' . wp_kses_post( $course->description ) . '</p>';
 		echo '<p><strong>' . __( 'Instructor:', 'edupreneur-pro' ) . '</strong> ' . ( $instructor ? $instructor->display_name : 'Expert' ) . '</p>';
 		echo '<div style="font-size:1.5em; color:var(--edu-primary); margin:20px 0;">$' . number_format( $course->price, 2 ) . '</div>';
@@ -274,7 +290,8 @@ final class EdupreneurPro {
 
 				echo '<div class="edu-card">';
 				echo '<div style="display:flex; justify-content:space-between; align-items:flex-start;">';
-				echo '<h3 style="margin-top:0;">' . esc_html( $course->title ) . '</h3>';
+				echo '<div style="flex-grow:1;"><span class="tag" style="margin-bottom:5px; display:inline-block;">' . esc_html( $course->category ) . '</span>';
+				echo '<h3 style="margin-top:0;">' . esc_html( $course->title ) . '</h3></div>';
 				echo '<span class="edu-badge">' . $progress_pct . '%</span>';
 				echo '</div>';
 

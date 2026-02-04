@@ -151,6 +151,16 @@ class Schema {
 				asset_type varchar(50) DEFAULT 'text',
 				PRIMARY KEY  (id)
 			) $charset_collate;",
+
+			"{$prefix}products" => "CREATE TABLE {$prefix}products (
+				id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+				title varchar(255) NOT NULL,
+				price decimal(10,2) DEFAULT '0.00',
+				file_url varchar(255) DEFAULT '',
+				download_limit int(11) DEFAULT 0,
+				expiry_days int(11) DEFAULT 0,
+				PRIMARY KEY  (id)
+			) $charset_collate;",
 		);
 	}
 }

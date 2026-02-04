@@ -7,6 +7,7 @@ class SystemService {
 	public static function clear_database() {
 		global $wpdb;
 		$tables = array(
+			'edu_categories',
 			'edu_courses',
 			'edu_modules',
 			'edu_lessons',
@@ -18,7 +19,10 @@ class SystemService {
 			'edu_commissions',
 			'edu_community_posts',
 			'edu_quizzes',
-			'edu_assignments'
+			'edu_assignments',
+			'edu_resources',
+			'edu_kb',
+			'edu_assets'
 		);
 
 		foreach ( $tables as $table ) {

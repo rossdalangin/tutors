@@ -37,6 +37,11 @@ class ModuleController extends WP_REST_Controller {
 
 		register_rest_route( $this->namespace, '/' . $this->rest_base . '/(?P<id>\d+)', array(
 			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_item' ),
+				'permission_callback' => function() { return current_user_can( 'read' ); },
+			),
+			array(
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'update_item' ),
 				'permission_callback' => function() { return current_user_can( 'manage_edu_courses' ); },
@@ -72,6 +77,10 @@ class ModuleController extends WP_REST_Controller {
 	public function get_items( $request ) {
 		$course_id = intval( $request['course_id'] );
 		return new WP_REST_Response( $this->repository->get_by_course( $course_id ), 200 );
+	}
+
+	public function get_item( $request ) {
+		return new WP_REST_Response( $this->repository->find( $request['id'] ), 200 );
 	}
 
 	public function create_item( $request ) {

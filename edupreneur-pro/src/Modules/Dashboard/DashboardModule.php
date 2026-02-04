@@ -126,6 +126,15 @@ class DashboardModule implements ModuleInterface {
 			'edu-category-mgmt',
 			array( $this, 'render_category_mgmt_page' )
 		);
+
+		add_submenu_page(
+			'edupreneur-pro',
+			__( 'Digital Products', 'edupreneur-pro' ),
+			__( 'Digital Products', 'edupreneur-pro' ),
+			'manage_options',
+			'edu-product-mgmt',
+			array( $this, 'render_product_mgmt_page' )
+		);
 	}
 
 	public function render_orders_page() {
@@ -450,6 +459,57 @@ class DashboardModule implements ModuleInterface {
 		echo '</div>';
 	}
 
+	public function render_product_mgmt_page() {
+		global $wpdb;
+		if ( isset( $_POST['edu_prod_action'] ) ) {
+			check_admin_referer( 'edu_prod_action' );
+			if ( $_POST['edu_prod_action'] === 'save' ) {
+				$data = array(
+					'title'          => sanitize_text_field( $_POST['title'] ),
+					'price'          => floatval( $_POST['price'] ),
+					'file_url'       => esc_url_raw( $_POST['file_url'] ),
+					'download_limit' => intval( $_POST['download_limit'] ),
+					'expiry_days'    => intval( $_POST['expiry_days'] )
+				);
+				if ( ! empty( $_POST['prod_id'] ) ) {
+					$wpdb->update( "{$wpdb->prefix}edu_products", $data, array( 'id' => intval( $_POST['prod_id'] ) ) );
+				} else {
+					$wpdb->insert( "{$wpdb->prefix}edu_products", $data );
+				}
+			} elseif ( $_POST['edu_prod_action'] === 'delete' ) {
+				$wpdb->delete( "{$wpdb->prefix}edu_products", array( 'id' => intval( $_POST['prod_id'] ) ) );
+			}
+			echo '<div class="updated"><p>Product updated.</p></div>';
+		}
+		$items = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}edu_products ORDER BY title ASC" );
+		echo '<div class="edu-admin-wrap"><h1>Manage Digital Products</h1>';
+		echo '<form method="post" class="edu-card" style="margin-bottom:20px;">';
+		wp_nonce_field( 'edu_prod_action' );
+		echo '<h3>Add/Edit Product</h3>';
+		echo '<input type="hidden" name="prod_id" id="prod_id">';
+		echo '<div class="edu-form-group"><label>Title</label><input type="text" name="title" id="prod_title" required></div>';
+		echo '<div class="edu-form-group"><label>Price ($)</label><input type="number" step="0.01" name="price" id="prod_price" value="0.00"></div>';
+		echo '<div class="edu-form-group"><label>File URL</label><input type="text" name="file_url" id="prod_url"></div>';
+		echo '<div class="edu-form-group"><label>Download Limit (0 for unlimited)</label><input type="number" name="download_limit" id="prod_limit" value="0"></div>';
+		echo '<div class="edu-form-group"><label>Expiry Days (0 for no expiry)</label><input type="number" name="expiry_days" id="prod_expiry" value="0"></div>';
+		echo '<button type="submit" name="edu_prod_action" value="save" class="edu-btn">Save Product</button></form>';
+
+		echo '<table class="wp-list-table widefat fixed striped"><thead><tr><th>Title</th><th>Price</th><th>Limit</th><th>Actions</th></tr></thead><tbody>';
+		if ( empty( $items ) ) {
+			echo '<tr><td colspan="4">No products found.</td></tr>';
+		} else {
+			foreach ( $items as $item ) {
+				echo "<tr><td>" . esc_html( $item->title ) . "</td><td>\${$item->price}</td><td>" . ( $item->download_limit ?: 'Unlimited' ) . "</td><td>";
+				echo "<button class='edu-btn' onclick='document.getElementById(\"prod_id\").value=\"{$item->id}\";document.getElementById(\"prod_title\").value=\"".esc_js($item->title)."\";document.getElementById(\"prod_price\").value=\"{$item->price}\";document.getElementById(\"prod_url\").value=\"".esc_js($item->file_url)."\";document.getElementById(\"prod_limit\").value=\"{$item->download_limit}\";document.getElementById(\"prod_expiry\").value=\"{$item->expiry_days}\";'>Edit</button> ";
+				echo "<form method='post' style='display:inline;'>";
+				wp_nonce_field( 'edu_prod_action' );
+				echo "<input type='hidden' name='prod_id' value='{$item->id}'>";
+				echo "<button type='submit' name='edu_prod_action' value='delete' class='edu-btn' style='background:#dc3545;' onclick='return confirm(\"Delete product?\")'>Delete</button></form></td></tr>";
+			}
+		}
+		echo '</tbody></table></div>';
+	}
+
 	public function render_dashboard() {
 		$analytics = new AnalyticsEngine();
 		$stats = $analytics->get_revenue_stats();
@@ -477,6 +537,20 @@ class DashboardModule implements ModuleInterface {
 		}
 		echo '<p>' . sprintf( __( 'You have generated %d orders with an average value of $%s.', 'edupreneur-pro' ), $stats['order_count'], number_format( $stats['avg_order_value'], 2 ) ) . '</p>';
 		echo '</div></div>';
+
+		echo '<div class="edu-card" style="margin-top:20px;">';
+		echo '<h3>' . esc_html__( 'Tax-Ready Financial Report', 'edupreneur-pro' ) . '</h3>';
+		echo '<p>' . esc_html__( 'Export-ready summary of your business earnings and estimated tax obligations.', 'edupreneur-pro' ) . '</p>';
+		echo '<table class="wp-list-table widefat fixed striped" style="margin-top:15px;">';
+		echo '<thead><tr><th>Description</th><th>Amount</th></tr></thead><tbody>';
+		echo '<tr><td>Total Gross Revenue</td><td>$' . number_format($stats['gross'], 2) . '</td></tr>';
+		echo '<tr><td>Total Refunds</td><td>-$' . number_format($stats['refunds'], 2) . '</td></tr>';
+		echo '<tr><td><strong>Net Taxable Income</strong></td><td><strong>$' . number_format($stats['net'], 2) . '</strong></td></tr>';
+		$est_tax = $stats['net'] * 0.20; // 20% estimated tax
+		echo '<tr><td>Estimated Tax Liability (20%)</td><td>$' . number_format($est_tax, 2) . '</td></tr>';
+		echo '</tbody></table>';
+		echo '<button class="edu-btn" style="margin-top:15px;" onclick="window.print()">Print for Accounting</button>';
+		echo '</div>';
 
 		echo '</div>';
 	}
