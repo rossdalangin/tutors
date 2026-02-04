@@ -43,6 +43,7 @@
                             <input type="hidden" id="entity-type">
                             <input type="hidden" id="entity-id">
                             <input type="hidden" id="parent-id">
+                            <input type="hidden" id="course-id">
                             <div class="edu-form-group">
                                 <label>Title</label>
                                 <input type="text" id="entity-title" placeholder="Enter title...">
@@ -120,7 +121,11 @@
             $(document).on('click', '.edu-modal-close, #close-modal-btn', () => $('#edu-builder-modal').hide());
             $(document).on('click', '#save-entity', () => self.saveEntity());
             $(document).on('click', '.edu-add-module', (e) => self.openModal('module', 0, $(e.currentTarget).data('course-id')));
-            $(document).on('click', '.edu-add-lesson', (e) => self.openModal('lesson', 0, $(e.currentTarget).data('module-id')));
+            $(document).on('click', '.edu-add-lesson', (e) => {
+                const mid = $(e.currentTarget).data('module-id');
+                const cid = mid === 0 ? $(e.currentTarget).data('course-id') : $(e.currentTarget).closest('.edu-course-container').data('id');
+                self.openModal('lesson', 0, mid, cid);
+            });
 
             // Edit actions
             $(document).on('click', '.edu-edit-course', (e) => self.loadAndOpenModal('course', $(e.currentTarget).closest('.edu-course-container').data('id')));
@@ -161,8 +166,11 @@
         },
 
         addQuizQuestion: function(qText = '', answers = [], correctIdx = 0) {
+            if (!this.radioCounter) this.radioCounter = 0;
+            const qId = ++this.radioCounter;
+
             const $qBox = $(`
-                <div class="quiz-question-box" style="border:1px solid #eee; padding:15px; margin-bottom:15px; border-radius:8px; background:#fafafa;">
+                <div class="quiz-question-box" data-q-id="${qId}" style="border:1px solid #eee; padding:15px; margin-bottom:15px; border-radius:8px; background:#fafafa;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
                         <strong>Question</strong>
                         <span class="remove-quiz-question" style="cursor:pointer; color:red;">Remove Q</span>
@@ -183,16 +191,14 @@
         },
 
         addQuizAnswer: function($list, text = '', isCorrect = false) {
-            const qIdx = $('.quiz-question-box').index($list.closest('.quiz-question-box'));
+            const qId = $list.closest('.quiz-question-box').data('q-id');
             $list.append(`
                 <div class="quiz-answer-row" style="display:flex; gap:10px; align-items:center; margin-bottom:5px;">
-                    <input type="radio" name="correct_${qIdx}" ${isCorrect ? 'checked' : ''} class="is-correct">
+                    <input type="radio" name="correct_ans_${qId}" ${isCorrect ? 'checked' : ''} class="is-correct">
                     <input type="text" class="ans-text" value="${text}" placeholder="Choice text..." style="flex-grow:1;">
                     <span class="remove-quiz-answer" style="cursor:pointer;">❌</span>
                 </div>
             `);
-            // Update names to ensure radio grouping works within the question
-            $list.find('input[type="radio"]').attr('name', 'correct_ans_' + qIdx);
         },
 
         initSortable: function() {
@@ -209,7 +215,7 @@
                 connectWith: '.edu-lessons-list',
                 update: function(event, ui) {
                     const sortedIDs = $(this).sortable('toArray', { attribute: 'data-id' });
-                    const moduleId = $(this).closest('.edu-module-box').data('id');
+                    const moduleId = $(this).data('id') === 0 ? 0 : $(this).closest('.edu-module-box').data('id');
                     self.updateOrder('lessons', sortedIDs, moduleId);
                 }
             });
@@ -237,10 +243,11 @@
             });
         },
 
-        openModal: function(type, id = 0, parentId = 0) {
+        openModal: function(type, id = 0, parentId = 0, courseId = 0) {
             $('#entity-type').val(type);
             $('#entity-id').val(id);
             $('#parent-id').val(parentId);
+            $('#course-id').val(courseId);
             this.currentCourseCategory = 0;
             $('#modal-title').text((id ? 'Edit ' : 'New ') + type.charAt(0).toUpperCase() + type.slice(1));
             $('#entity-title, #entity-desc, #lesson-video').val('');
@@ -368,10 +375,18 @@
                         <div class="edu-modules-list" id="modules-for-${course.id}">
                             <div class="edu-loading-mini">Loading modules...</div>
                         </div>
+                        <div class="edu-orphan-lessons-container" style="margin-top:15px; border-top:1px dashed #ddd; padding-top:15px;">
+                            <h4 style="font-size:12px; text-transform:uppercase; color:#888;">Module-less Lessons</h4>
+                            <div class="edu-lessons-list" id="orphan-lessons-for-${course.id}" data-id="0">
+                                <!-- Orphan lessons go here -->
+                            </div>
+                            <button class="edu-btn-link edu-add-lesson" data-module-id="0" data-course-id="${course.id}">+ Add Direct Lesson</button>
+                        </div>
                     </div>
                 `);
                 $list.append($courseRow);
                 this.fetchModules(course.id);
+                this.fetchLessons(0, course.id);
             });
         },
 
@@ -423,12 +438,14 @@
                 url: eduApi.root + 'edupreneur/v1/lessons?course_id=' + courseId + '&module_id=' + moduleId,
                 method: 'GET',
                 beforeSend: (xhr) => xhr.setRequestHeader('X-WP-Nonce', eduApi.nonce),
-                success: (lessons) => self.renderLessons(moduleId, lessons)
+                success: (lessons) => self.renderLessons(moduleId, lessons, courseId)
             });
         },
 
-        renderLessons: function(moduleId, lessons) {
-            const $container = $(`#lessons-for-${moduleId}`);
+        renderLessons: function(moduleId, lessons, courseId) {
+            const $container = moduleId === 0 ? $(`#orphan-lessons-for-${courseId}`) : $(`#lessons-for-${moduleId}`);
+            if (!$container.length) return;
+
             $container.empty();
             lessons.forEach(lesson => {
                 $container.append(`
@@ -470,7 +487,7 @@
             if (type === 'lesson') {
                 if (!id || id == 0) {
                     data.module_id = parentId;
-                    data.course_id = $(`.edu-module-box[data-id="${parentId}"]`).closest('.edu-course-container').data('id');
+                    data.course_id = $('#course-id').val() || $(`.edu-module-box[data-id="${parentId}"]`).closest('.edu-course-container').data('id');
                 }
                 data.lesson_type = $('#lesson-type').val();
                 data.video_url = $('#lesson-video').val();

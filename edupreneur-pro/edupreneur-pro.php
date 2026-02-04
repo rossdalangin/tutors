@@ -169,12 +169,57 @@ final class EdupreneurPro {
 		echo '<h1>' . esc_html( $lesson->title ) . '</h1>';
 
 		if ( ! empty( $lesson->video_url ) ) {
-			echo '<div class="edu-video-container" style="margin: 20px 0; background: #000; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; color: #fff;">';
-			echo '<p>Video Player: ' . esc_url( $lesson->video_url ) . '</p>';
+			echo '<div class="edu-video-container" style="margin: 20px 0;">';
+			echo $this->get_video_embed( $lesson->video_url );
 			echo '</div>';
 		}
 
 		echo '<div class="edu-lesson-content">' . wpautop( $lesson->content ) . '</div>';
+
+		if ( $lesson->lesson_type === 'quiz' ) {
+			$quiz = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}edu_quizzes WHERE lesson_id = %d", $lesson_id ) );
+			if ( $quiz && ! empty( $quiz->questions ) ) {
+				$questions = json_decode( $quiz->questions, true );
+				if ( is_array( $questions ) ) {
+					echo '<div class="edu-quiz-player edu-card" style="margin-top:30px; border-left: 5px solid var(--edu-primary);">';
+					echo '<h3>' . esc_html( $quiz->title ) . '</h3>';
+					echo '<form id="edu-quiz-form">';
+					foreach ( $questions as $q_idx => $q ) {
+						echo '<div class="edu-quiz-question" style="margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid #eee;">';
+						echo '<p><strong>' . ( $q_idx + 1 ) . '. ' . esc_html( $q['q'] ) . '</strong></p>';
+						if ( isset( $q['a'] ) && is_array( $q['a'] ) ) {
+							foreach ( $q['a'] as $a_idx => $ans ) {
+								$correct = (int)$q['c'] === $a_idx ? '1' : '0';
+								echo '<label style="display:block; margin: 8px 0; cursor:pointer;"><input type="radio" name="q_' . $q_idx . '" value="' . $a_idx . '" data-correct="' . $correct . '"> ' . esc_html( $ans ) . '</label>';
+							}
+						}
+						echo '</div>';
+					}
+					echo '<button type="button" id="edu-submit-quiz" class="edu-btn">' . esc_html__( 'Check My Answers', 'edupreneur-pro' ) . '</button>';
+					echo '<div id="edu-quiz-results" style="margin-top:20px; display:none;"></div>';
+					echo '</form>';
+					echo '</div>';
+
+					echo '<script>
+					jQuery("#edu-submit-quiz").click(function(){
+						let total = jQuery(".edu-quiz-question").length;
+						let correct = 0;
+						let complete = true;
+						jQuery(".edu-quiz-question").each(function(idx){
+							let selected = jQuery("input[name=\'q_\'+idx+\'\']:checked");
+							if(selected.length === 0) { complete = false; return false; }
+							if(selected.data("correct") == "1") { correct++; }
+						});
+						if(!complete) { alert("Please answer all questions."); return; }
+						let pct = Math.round((correct / total) * 100);
+						let msg = "You got " + correct + " out of " + total + " correct (" + pct + "%).";
+						let resultBox = jQuery("#edu-quiz-results");
+						resultBox.html("<div class=\'edu-card\' style=\'background:#f8f9fa; border:2px solid " + (pct >= 70 ? "#28a745" : "#dc3545") + ";\'><h4>" + msg + "</h4>" + (pct >= 70 ? "<p>Great job! You can now mark this lesson as completed.</p>" : "<p>Try again to improve your score.</p>") + "</div>").show();
+					});
+					</script>';
+				}
+			}
+		}
 
 		$resources = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}edu_resources WHERE lesson_id = %d", $lesson_id ) );
 		if ( ! empty( $resources ) ) {
@@ -224,6 +269,18 @@ final class EdupreneurPro {
 		echo '</div>';
 
 		echo '<h2>' . __( 'Course Curriculum', 'edupreneur-pro' ) . '</h2>';
+
+		// Orphan lessons
+		$orphan_lessons = $wpdb->get_results( $wpdb->prepare( "SELECT title FROM {$wpdb->prefix}edu_lessons WHERE course_id = %d AND module_id = 0 ORDER BY order_index ASC", $course_id ) );
+		if ( ! empty( $orphan_lessons ) ) {
+			echo '<div class="edu-card" style="margin-bottom:10px;">';
+			echo '<ul>';
+			foreach ( $orphan_lessons as $lesson ) {
+				echo '<li>' . esc_html( $lesson->title ) . '</li>';
+			}
+			echo '</ul></div>';
+		}
+
 		$modules = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}edu_modules WHERE course_id = %d ORDER BY order_index ASC", $course_id ) );
 		foreach ( $modules as $module ) {
 			echo '<div class="edu-card" style="margin-bottom:10px;"><h3>' . esc_html( $module->title ) . '</h3>';
@@ -301,6 +358,20 @@ final class EdupreneurPro {
 
 				echo '<p class="edu-caption">' . sprintf( __( '%d of %d lessons completed', 'edupreneur-pro' ), $completed_lessons, $total_lessons ) . '</p>';
 
+				// Display lessons without a module first
+				$orphan_lessons = $wpdb->get_results( $wpdb->prepare( "SELECT id, title FROM {$wpdb->prefix}edu_lessons WHERE course_id = %d AND module_id = 0 ORDER BY order_index ASC", $course->id ) );
+				if ( ! empty( $orphan_lessons ) ) {
+					echo '<div class="edu-module-summary" style="margin-top:15px; border-top:1px solid #f0f0f0; padding-top:10px;">';
+					echo '<ul style="margin: 5px 0 0 15px; list-style: disc;">';
+					foreach ( $orphan_lessons as $lesson ) {
+						$is_done = $wpdb->get_var( $wpdb->prepare( "SELECT completed FROM {$wpdb->prefix}edu_progress WHERE student_id = %d AND lesson_id = %d", $student_id, $lesson->id ) );
+						$done_class = $is_done ? 'is-completed' : '';
+						$icon = $is_done ? '✅' : '📄';
+						echo '<li style="list-style:none; margin-bottom:5px;"><a href="' . add_query_arg( array( 'edu_lesson' => $lesson->id ), $base_url ) . '" class="edu-lesson-link ' . $done_class . '"><span class="edu-check-icon">' . $icon . '</span> ' . esc_html( $lesson->title ) . '</a></li>';
+					}
+					echo '</ul></div>';
+				}
+
 				$modules = $wpdb->get_results( $wpdb->prepare( "SELECT id, title FROM {$wpdb->prefix}edu_modules WHERE course_id = %d ORDER BY order_index ASC", $course->id ) );
 
 				if ( ! empty( $modules ) ) {
@@ -309,11 +380,12 @@ final class EdupreneurPro {
 						echo '<strong style="font-size: 0.85em; color: #888; text-transform:uppercase;">' . esc_html( $module->title ) . '</strong>';
 						$lessons = $wpdb->get_results( $wpdb->prepare( "SELECT id, title FROM {$wpdb->prefix}edu_lessons WHERE module_id = %d ORDER BY order_index ASC", $module->id ) );
 						if ( ! empty( $lessons ) ) {
-							echo '<ul style="margin: 5px 0 0 15px; list-style: disc;">';
+							echo '<ul style="margin: 5px 0 0 0; padding:0;">';
 							foreach ( $lessons as $lesson ) {
 								$is_done = $wpdb->get_var( $wpdb->prepare( "SELECT completed FROM {$wpdb->prefix}edu_progress WHERE student_id = %d AND lesson_id = %d", $student_id, $lesson->id ) );
-								$style = $is_done ? 'text-decoration: line-through; color: #aaa;' : 'font-weight: 500;';
-								echo '<li style="margin-bottom:5px;"><a href="' . add_query_arg( array( 'edu_lesson' => $lesson->id ), $base_url ) . '" style="' . $style . '">' . esc_html( $lesson->title ) . '</a></li>';
+								$done_class = $is_done ? 'is-completed' : '';
+								$icon = $is_done ? '✅' : '📄';
+								echo '<li style="list-style:none; margin-bottom:5px;"><a href="' . add_query_arg( array( 'edu_lesson' => $lesson->id ), $base_url ) . '" class="edu-lesson-link ' . $done_class . '"><span class="edu-check-icon">' . $icon . '</span> ' . esc_html( $lesson->title ) . '</a></li>';
 							}
 							echo '</ul>';
 						}
@@ -399,6 +471,30 @@ final class EdupreneurPro {
 	}
 
 	public function on_plugins_loaded() {}
+
+	/**
+	 * Get video embed code from URL.
+	 */
+	private function get_video_embed( $url ) {
+		$embed_url = '';
+		if ( strpos( $url, 'youtube.com' ) !== false || strpos( $url, 'youtu.be' ) !== false ) {
+			if ( preg_match( '/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i', $url, $match ) ) {
+				$video_id = $match[1];
+				$embed_url = "https://www.youtube.com/embed/{$video_id}";
+			}
+		} elseif ( strpos( $url, 'vimeo.com' ) !== false ) {
+			if ( preg_match( '/vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/(?:[^\/]*)\/videos\/|album\/(?:\d+)\/video\/|video\/|)(\d+)(?:$|\/|\?)/i', $url, $match ) ) {
+				$video_id = $match[1];
+				$embed_url = "https://player.vimeo.com/video/{$video_id}";
+			}
+		}
+
+		if ( $embed_url ) {
+			return '<iframe width="100%" height="auto" src="' . esc_url( $embed_url ) . '" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="aspect-ratio: 16/9; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);"></iframe>';
+		}
+
+		return '<div class="edu-video-placeholder" style="background:#000; color:#fff; aspect-ratio:16/9; display:flex; align-items:center; justify-content:center; border-radius:12px;">' . esc_html__( 'Video Link:', 'edupreneur-pro' ) . ' ' . esc_url( $url ) . '</div>';
+	}
 }
 
 function edupreneur_pro_init() {
