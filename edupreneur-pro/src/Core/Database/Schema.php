@@ -6,11 +6,20 @@ class Schema {
 		$charset_collate = $wpdb->get_charset_collate();
 		$prefix = $wpdb->prefix . 'edu_';
 		return array(
+			"{$prefix}categories" => "CREATE TABLE {$prefix}categories (
+				id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+				name varchar(255) NOT NULL,
+				slug varchar(255) NOT NULL,
+				description text,
+				PRIMARY KEY  (id)
+			) $charset_collate;",
+
 			"{$prefix}courses" => "CREATE TABLE {$prefix}courses (
 				id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
 				title varchar(255) NOT NULL,
 				slug varchar(255) NOT NULL,
 				category varchar(100) DEFAULT 'General',
+				category_id bigint(20) UNSIGNED DEFAULT 0,
 				description longtext,
 				instructor_id bigint(20) UNSIGNED NOT NULL,
 				price decimal(10,2) DEFAULT '0.00',

@@ -224,7 +224,7 @@ final class EdupreneurPro {
 
 	public function render_category_courses( $category ) {
 		global $wpdb;
-		$courses = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}edu_courses WHERE category = %s AND status = 'publish'", $category ) );
+		$courses = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}edu_courses WHERE (category = %s OR category_id = (SELECT id FROM {$wpdb->prefix}edu_categories WHERE slug = %s)) AND status = 'publish'", $category, $category ) );
 		$base_url = ( is_admin() && isset( $_GET['page'] ) ) ? admin_url( 'admin.php?page=' . sanitize_text_field( $_GET['page'] ) ) : get_permalink();
 
 		ob_start();

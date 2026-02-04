@@ -50,11 +50,18 @@ class SystemService {
 		$instructor_id = get_user_by( 'login', 'tutor_demo' )->ID;
 		$student_id = get_user_by( 'login', 'student_demo' )->ID;
 
+		// Add sample categories
+		$wpdb->insert( "{$wpdb->prefix}edu_categories", array( 'name' => 'Business', 'slug' => 'business', 'description' => 'Master the art of commerce and entrepreneurship.' ) );
+		$cat_business_id = $wpdb->insert_id;
+		$wpdb->insert( "{$wpdb->prefix}edu_categories", array( 'name' => 'Marketing', 'slug' => 'marketing', 'description' => 'Learn how to reach your audience and scale your growth.' ) );
+		$cat_marketing_id = $wpdb->insert_id;
+
 		// Add a sample course
 		$wpdb->insert( "{$wpdb->prefix}edu_courses", array(
 			'title'       => 'Mastering Digital Entrepreneurship',
 			'description' => 'A comprehensive guide to building a scalable online business from scratch.',
 			'category'    => 'Business',
+			'category_id' => $cat_business_id,
 			'price'       => 199.99,
 			'status'      => 'publish',
 			'instructor_id' => $instructor_id

@@ -117,6 +117,15 @@ class DashboardModule implements ModuleInterface {
 			'edu-kb-mgmt',
 			array( $this, 'render_kb_mgmt_page' )
 		);
+
+		add_submenu_page(
+			'edupreneur-pro',
+			__( 'Course Categories', 'edupreneur-pro' ),
+			__( 'Categories', 'edupreneur-pro' ),
+			'manage_options',
+			'edu-category-mgmt',
+			array( $this, 'render_category_mgmt_page' )
+		);
 	}
 
 	public function render_orders_page() {
@@ -334,6 +343,48 @@ class DashboardModule implements ModuleInterface {
 		echo '<button type="submit" name="edu_action" value="save_keys" class="edu-btn">' . esc_html__( 'Save API Keys', 'edupreneur-pro' ) . '</button>';
 		echo '</form></div>';
 		echo '</div></div>';
+	}
+
+	public function render_category_mgmt_page() {
+		global $wpdb;
+		if ( isset( $_POST['edu_cat_action'] ) ) {
+			check_admin_referer( 'edu_cat_action' );
+			if ( $_POST['edu_cat_action'] === 'save' ) {
+				$data = array( 'name' => sanitize_text_field( $_POST['name'] ), 'slug' => sanitize_title( $_POST['name'] ), 'description' => sanitize_textarea_field( $_POST['description'] ) );
+				if ( ! empty( $_POST['cat_id'] ) ) {
+					$wpdb->update( "{$wpdb->prefix}edu_categories", $data, array( 'id' => intval( $_POST['cat_id'] ) ) );
+				} else {
+					$wpdb->insert( "{$wpdb->prefix}edu_categories", $data );
+				}
+			} elseif ( $_POST['edu_cat_action'] === 'delete' ) {
+				$wpdb->delete( "{$wpdb->prefix}edu_categories", array( 'id' => intval( $_POST['cat_id'] ) ) );
+			}
+			echo '<div class="updated"><p>Category updated.</p></div>';
+		}
+		$items = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}edu_categories ORDER BY name ASC" );
+		echo '<div class="edu-admin-wrap"><h1>Manage Course Categories</h1>';
+		echo '<form method="post" class="edu-card" style="margin-bottom:20px;">';
+		wp_nonce_field( 'edu_cat_action' );
+		echo '<h3>Add/Edit Category</h3>';
+		echo '<input type="hidden" name="cat_id" id="cat_id">';
+		echo '<div class="edu-form-group"><label>Name</label><input type="text" name="name" id="cat_name" required></div>';
+		echo '<div class="edu-form-group"><label>Description</label><textarea name="description" id="cat_desc" rows="3"></textarea></div>';
+		echo '<button type="submit" name="edu_cat_action" value="save" class="edu-btn">Save Category</button></form>';
+
+		echo '<table class="wp-list-table widefat fixed striped"><thead><tr><th>Name</th><th>Slug</th><th>Actions</th></tr></thead><tbody>';
+		if ( empty( $items ) ) {
+			echo '<tr><td colspan="3">No categories found.</td></tr>';
+		} else {
+			foreach ( $items as $item ) {
+				echo "<tr><td>" . esc_html( $item->name ) . "</td><td>" . esc_html( $item->slug ) . "</td><td>";
+				echo "<button class='edu-btn' onclick='document.getElementById(\"cat_id\").value=\"{$item->id}\";document.getElementById(\"cat_name\").value=\"".esc_js($item->name)."\";document.getElementById(\"cat_desc\").value=\"".esc_js($item->description)."\";'>Edit</button> ";
+				echo "<form method='post' style='display:inline;'>";
+				wp_nonce_field( 'edu_cat_action' );
+				echo "<input type='hidden' name='cat_id' value='{$item->id}'>";
+				echo "<button type='submit' name='edu_cat_action' value='delete' class='edu-btn' style='background:#dc3545;' onclick='return confirm(\"Delete category?\")'>Delete</button></form></td></tr>";
+			}
+		}
+		echo '</tbody></table></div>';
 	}
 
 	public function render_kb_mgmt_page() {

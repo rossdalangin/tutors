@@ -49,7 +49,9 @@
                             </div>
                             <div class="edu-form-group" id="course-category-group" style="display:none;">
                                 <label>Category</label>
-                                <input type="text" id="course-category" placeholder="e.g. Marketing, Business...">
+                                <select id="course-category">
+                                    <option value="0">General</option>
+                                </select>
                             </div>
                             <div class="edu-form-group" id="desc-group">
                                 <label>Description</label>
@@ -171,10 +173,19 @@
             });
         },
 
+        fetchCategories: function() {
+            return $.ajax({
+                url: eduApi.root + 'edupreneur/v1/categories',
+                method: 'GET',
+                beforeSend: (xhr) => xhr.setRequestHeader('X-WP-Nonce', eduApi.nonce)
+            });
+        },
+
         openModal: function(type, id = 0, parentId = 0) {
             $('#entity-type').val(type);
             $('#entity-id').val(id);
             $('#parent-id').val(parentId);
+            this.currentCourseCategory = 0;
             $('#modal-title').text((id ? 'Edit ' : 'New ') + type.charAt(0).toUpperCase() + type.slice(1));
             $('#entity-title, #entity-desc, #lesson-video').val('');
             $('#lesson-type').val('video');
@@ -195,6 +206,16 @@
                 $('#lesson-settings').hide();
                 $('#desc-group').show();
                 $('#course-category-group').show();
+                this.fetchCategories().then(cats => {
+                    const $sel = $('#course-category').empty();
+                    $sel.append('<option value="0">General</option>');
+                    cats.forEach(cat => {
+                        $sel.append(`<option value="${cat.id}">${cat.name}</option>`);
+                    });
+                    if (this.currentCourseCategory) {
+                        $sel.val(this.currentCourseCategory);
+                    }
+                });
             }
             $('#edu-builder-modal').show();
         },
@@ -211,7 +232,8 @@
                     $('#entity-title').val(data.title || data.name);
                     $('#entity-desc').val(data.description || data.content);
                     if (type === 'course') {
-                        $('#course-category').val(data.category || 'General');
+                        this.currentCourseCategory = data.category_id || 0;
+                        $('#course-category').val(this.currentCourseCategory);
                     }
                     if (type === 'lesson') {
                         $('#lesson-type').val(data.lesson_type || 'video');
@@ -371,7 +393,7 @@
             if (id && id != 0) url += '/' + id;
 
             let data = { title: title, description: desc };
-            if (type === 'course') data.category = $('#course-category').val();
+            if (type === 'course') data.category_id = $('#course-category').val();
             if (type === 'module' && (!id || id == 0)) data.course_id = parentId;
             if (type === 'lesson') {
                 if (!id || id == 0) {

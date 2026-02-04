@@ -34,8 +34,13 @@ class ShortcodeService {
 
 	public function render_categories() {
 		global $wpdb;
-		$categories = $wpdb->get_results( "SELECT DISTINCT category FROM {$wpdb->prefix}edu_courses WHERE status = 'publish'" );
+		$categories = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}edu_categories ORDER BY name ASC" );
 		$base_url = ( is_admin() && isset( $_GET['page'] ) ) ? admin_url( 'admin.php?page=' . sanitize_text_field( $_GET['page'] ) ) : get_permalink();
+
+		if ( empty( $categories ) ) {
+			// Fallback to distinct categories from courses if table is empty
+			$categories = $wpdb->get_results( "SELECT DISTINCT category as name, category as slug FROM {$wpdb->prefix}edu_courses WHERE status = 'publish'" );
+		}
 
 		if ( empty( $categories ) ) {
 			return '<p>' . __( 'No categories found.', 'edupreneur-pro' ) . '</p>';
@@ -43,12 +48,12 @@ class ShortcodeService {
 
 		$output = '<div class="edu-grid">';
 		foreach ( $categories as $cat ) {
-			$cat_name = $cat->category ?: 'General';
+			$cat_name = $cat->name ?: 'General';
 			$output .= '<div class="edu-card">';
 			$output .= '<div style="font-size: 2em; margin-bottom:10px;">📂</div>';
 			$output .= '<h3>' . esc_html( $cat_name ) . '</h3>';
-			$output .= '<p>' . sprintf( __( 'Master your skills in %s. Join thousands of students today.', 'edupreneur-pro' ), esc_html( $cat_name ) ) . '</p>';
-			$output .= '<a href="' . add_query_arg( 'edu_category', $cat_name, $base_url ) . '" class="edu-btn edu-btn-block">' . __( 'View Courses', 'edupreneur-pro' ) . '</a>';
+			$output .= '<p>' . esc_html( $cat->description ?: sprintf( __( 'Master your skills in %s. Join thousands of students today.', 'edupreneur-pro' ), esc_html( $cat_name ) ) ) . '</p>';
+			$output .= '<a href="' . add_query_arg( 'edu_category', $cat->slug ?: $cat_name, $base_url ) . '" class="edu-btn edu-btn-block">' . __( 'View Courses', 'edupreneur-pro' ) . '</a>';
 			$output .= '</div>';
 		}
 		$output .= '</div>';

@@ -36,6 +36,9 @@ class CourseBuilderModule implements ModuleInterface {
 		$module_controller = new ModuleController();
 		$module_controller->register_routes();
 
+		$category_controller = new \EdupreneurPro\Modules\CourseBuilder\Controllers\CategoryController();
+		$category_controller->register_routes();
+
 		$lesson_controller = new LessonController();
 		$lesson_controller->register_routes();
 	}
