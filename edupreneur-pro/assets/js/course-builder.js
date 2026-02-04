@@ -185,8 +185,8 @@
             if (answers.length > 0) {
                 answers.forEach((ans, idx) => this.addQuizAnswer($ansList, ans, idx === correctIdx));
             } else {
-                this.addQuizAnswer($ansList, 'Yes', true);
-                this.addQuizAnswer($ansList, 'No', false);
+                this.addQuizAnswer($ansList, 'Option A', true);
+                this.addQuizAnswer($ansList, 'Option B', false);
             }
         },
 
@@ -443,8 +443,13 @@
         },
 
         renderLessons: function(moduleId, lessons, courseId) {
-            const $container = moduleId === 0 ? $(`#orphan-lessons-for-${courseId}`) : $(`#lessons-for-${moduleId}`);
+            const isOrphan = parseInt(moduleId) === 0;
+            const $container = isOrphan ? $(`#orphan-lessons-for-${courseId}`) : $(`#lessons-for-${moduleId}`);
             if (!$container.length) return;
+
+            if (isOrphan) {
+                $container.closest('.edu-orphan-lessons-container').toggle(lessons.length > 0);
+            }
 
             $container.empty();
             lessons.forEach(lesson => {

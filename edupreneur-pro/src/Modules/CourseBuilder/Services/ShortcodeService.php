@@ -129,6 +129,36 @@ class ShortcodeService {
 		if ( isset( $_POST['edu_confirm_purchase'] ) && check_admin_referer( 'edu_checkout' ) ) {
 			$gateway_id = isset( $_POST['edu_gateway_used'] ) ? sanitize_text_field( $_POST['edu_gateway_used'] ) : 'simulated';
 
+			ob_start();
+			?>
+			<div class="edu-card" style="text-align:center; padding:60px;">
+				<div class="edu-loader" style="border: 6px solid #f3f3f3; border-top: 6px solid var(--edu-primary); border-radius: 50%; width: 60px; height: 60px; animation: spin 2s linear infinite; margin: 0 auto 20px;"></div>
+				<h2><?php _e( 'Processing Transaction...', 'edupreneur-pro' ); ?></h2>
+				<p><?php printf( __( 'Communicating with %s secure servers. Please do not refresh the page.', 'edupreneur-pro' ), ucfirst($gateway_id) ); ?></p>
+
+				<style>
+					@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+				</style>
+
+				<form id="edu-final-enroll-form" method="post">
+					<?php wp_nonce_field( 'edu_checkout' ); ?>
+					<input type="hidden" name="edu_final_enroll" value="1">
+					<input type="hidden" name="edu_gateway_used" value="<?php echo esc_attr($gateway_id); ?>">
+				</form>
+
+				<script>
+					setTimeout(function() {
+						document.getElementById('edu-final-enroll-form').submit();
+					}, 3000);
+				</script>
+			</div>
+			<?php
+			return ob_get_clean();
+		}
+
+		if ( isset( $_POST['edu_final_enroll'] ) && check_admin_referer( 'edu_checkout' ) ) {
+			$gateway_id = isset( $_POST['edu_gateway_used'] ) ? sanitize_text_field( $_POST['edu_gateway_used'] ) : 'simulated';
+
 			// Simulate order creation
 			$wpdb->insert( "{$wpdb->prefix}edu_orders", array(
 				'user_id'      => get_current_user_id(),
@@ -136,6 +166,13 @@ class ShortcodeService {
 				'status'       => 'completed'
 			) );
 			$order_id = $wpdb->insert_id;
+
+			// Record Payment
+			$wpdb->insert( "{$wpdb->prefix}edu_payments", array(
+				'order_id' => $order_id,
+				'amount'   => $course->price,
+				'status'   => 'succeeded'
+			) );
 
 			// Enroll student
 			$wpdb->insert( "{$wpdb->prefix}edu_enrollments", array(
@@ -156,7 +193,9 @@ class ShortcodeService {
 
 			$output = '<div class="edu-card" style="text-align:center; border:2px solid #28a745; padding:40px;">';
 			$output .= '<div style="font-size: 4em; color:#28a745; margin-bottom:20px;">🎉</div>';
-			$output .= '<h2>' . __( 'Registration Successful!', 'edupreneur-pro' ) . '</h2>';
+			$output .= '<h2>' . __( 'Payment Verified!', 'edupreneur-pro' ) . '</h2>';
+			$output .= '<p>' . sprintf( __( 'Your transaction via %s was successful.', 'edupreneur-pro' ), ucfirst($gateway_id) ) . '</p>';
+			$output .= '<div style="background:#f8f9fa; padding:15px; border-radius:8px; margin:20px 0; font-family:monospace;">Order ID: #' . $order_id . '</div>';
 			$output .= '<p>' . __( 'You have been enrolled in the course. Start your learning journey now.', 'edupreneur-pro' ) . '</p>';
 			$output .= '<a href="' . add_query_arg( 'edu_course_id', $course_id, $base_url ) . '" class="edu-btn" style="margin-top:20px; padding: 12px 40px;">' . __( 'Go to My Course', 'edupreneur-pro' ) . '</a>';
 			$output .= '</div>';
@@ -165,6 +204,25 @@ class ShortcodeService {
 
 		if ( isset( $_POST['edu_initiate_payment'] ) && check_admin_referer( 'edu_checkout' ) ) {
 			$gateway_id = sanitize_text_field( $_POST['edu_gateway'] );
+			ob_start();
+			?>
+			<div class="edu-card" style="text-align:center; padding:60px;">
+				<div class="edu-loader" style="border: 6px solid #f3f3f3; border-top: 6px solid var(--edu-primary); border-radius: 50%; width: 60px; height: 60px; animation: spin 2s linear infinite; margin: 0 auto 20px;"></div>
+				<h2><?php _e( 'Redirecting to Secure Gateway...', 'edupreneur-pro' ); ?></h2>
+				<p><?php printf( __( 'Please wait while we connect you to %s.', 'edupreneur-pro' ), ucfirst($gateway_id) ); ?></p>
+				<style> @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } } </style>
+				<script>
+					setTimeout(function() {
+						window.location.href = "<?php echo add_query_arg( array( 'edu_external_gateway' => 1, 'gateway' => $gateway_id, 'buy_course' => $course->id ), get_permalink() ); ?>";
+					}, 2000);
+				</script>
+			</div>
+			<?php
+			return ob_get_clean();
+		}
+
+		if ( isset( $_GET['edu_external_gateway'] ) ) {
+			$gateway_id = sanitize_text_field( $_GET['gateway'] );
 			return $this->render_gateway_simulation( $course, $gateway_id );
 		}
 
@@ -192,23 +250,56 @@ class ShortcodeService {
 	}
 
 	public function render_gateway_simulation( $course, $gateway_id ) {
-		$output = '<div class="edu-card" style="max-width: 600px; margin: 40px auto; text-align:center; padding:40px;">';
-		$output .= '<div style="font-size: 3em; margin-bottom: 20px;">🏦</div>';
-		$output .= '<h2>' . sprintf( __( 'Simulated %s Gateway', 'edupreneur-pro' ), ucfirst($gateway_id) ) . '</h2>';
-		$output .= '<p>' . sprintf( __( 'You have been redirected to the secure %s payment page.', 'edupreneur-pro' ), ucfirst($gateway_id) ) . '</p>';
-		$output .= '<div style="background:#f0f0f1; padding:20px; border-radius:8px; margin:20px 0; border: 1px dashed #ccc;">';
-		$output .= '<p style="margin:0; color:#666;">' . __( 'Payment Reference:', 'edupreneur-pro' ) . ' EDU-' . time() . '</p>';
-		$output .= '<div style="font-size:2em; font-weight:700; color:var(--edu-text); margin-top:10px;">$' . number_format($course->price, 2) . '</div>';
-		$output .= '</div>';
-		$output .= '<form method="post">';
-		$output .= wp_nonce_field( 'edu_checkout', '_wpnonce', true, false );
-		$output .= '<input type="hidden" name="edu_confirm_purchase" value="1">';
-		$output .= '<input type="hidden" name="edu_gateway_used" value="' . esc_attr($gateway_id) . '">';
-		$output .= '<button type="submit" class="edu-btn edu-btn-block" style="padding: 15px; font-size:1.1em; background:#28a745;">' . __( 'Authorize & Pay Now', 'edupreneur-pro' ) . '</button>';
-		$output .= '<p style="margin-top:15px; font-size:0.9em;"><a href="' . get_permalink() . '">' . __( 'Cancel and return to site', 'edupreneur-pro' ) . '</a></p>';
-		$output .= '</form>';
-		$output .= '</div>';
-		return $output;
+		$gateway_name = ucfirst($gateway_id);
+		$bg_color = '#ffffff';
+		$accent_color = 'var(--edu-primary)';
+
+		if($gateway_id === 'stripe') { $accent_color = '#635bff'; }
+		if($gateway_id === 'paypal') { $accent_color = '#003087'; }
+		if($gateway_id === 'gcash') { $accent_color = '#007dfe'; }
+
+		ob_start();
+		?>
+		<div class="edu-external-gateway-sim" style="background:#f6f9fc; min-height:500px; padding:40px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+			<div style="max-width: 480px; margin: 0 auto; background: #fff; border-radius: 8px; box-shadow: 0 50px 100px -20px rgba(50,50,93,.25), 0 30px 60px -30px rgba(0,0,0,.3); overflow:hidden;">
+				<div style="padding:20px; background: <?php echo $accent_color; ?>; color:#fff; display:flex; justify-content:space-between; align-items:center;">
+					<h3 style="margin:0; color:#fff; font-size:16px;"><?php echo $gateway_name; ?> Checkout</h3>
+					<span style="font-size:12px; opacity:0.8;">Secure encrypted connection</span>
+				</div>
+				<div style="padding:30px;">
+					<div style="margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:20px;">
+						<p style="margin:0; color:#6b7c93; font-size:14px;"><?php _e('Merchant:', 'edupreneur-pro'); ?> EdupreneurPro Academy</p>
+						<h2 style="margin:10px 0; font-size:32px; color:#32325d;">$<?php echo number_format($course->price, 2); ?></h2>
+						<p style="margin:0; color:#32325d; font-weight:600;"><?php echo esc_html($course->title); ?></p>
+					</div>
+
+					<div style="margin-bottom:20px;">
+						<label style="display:block; margin-bottom:8px; color:#32325d; font-size:14px; font-weight:500;"><?php _e('Card Information', 'edupreneur-pro'); ?></label>
+						<div style="border:1px solid #e6ebf1; padding:12px; border-radius:4px; color:#32325d; font-size:14px;">
+							**** **** **** 4242
+						</div>
+					</div>
+
+					<form method="post">
+						<?php wp_nonce_field( 'edu_checkout' ); ?>
+						<input type="hidden" name="edu_confirm_purchase" value="1">
+						<input type="hidden" name="edu_gateway_used" value="<?php echo esc_attr($gateway_id); ?>">
+						<button type="submit" style="width:100%; padding:14px; background:<?php echo $accent_color; ?>; color:#fff; border:none; border-radius:4px; font-size:16px; font-weight:600; cursor:pointer; box-shadow: 0 4px 6px rgba(50,50,93,.11), 0 1px 3px rgba(0,0,0,.08); transition: all 0.15s ease;">
+							<?php printf( __('Pay $%s with %s', 'edupreneur-pro'), number_format($course->price, 2), $gateway_name ); ?>
+						</button>
+					</form>
+
+					<p style="text-align:center; margin-top:20px; font-size:13px; color:#6b7c93;">
+						<a href="<?php echo get_permalink(); ?>" style="color:#6b7c93; text-decoration:none;">← <?php _e('Cancel and return', 'edupreneur-pro'); ?></a>
+					</p>
+				</div>
+			</div>
+			<div style="text-align:center; margin-top:30px;">
+				<p style="color:#6b7c93; font-size:14px;">Powered by <strong>EdupreneurPro Payments Engine</strong></p>
+			</div>
+		</div>
+		<?php
+		return ob_get_clean();
 	}
 
 	private function get_course_html( $course ) {

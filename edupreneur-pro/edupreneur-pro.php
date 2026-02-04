@@ -273,7 +273,7 @@ final class EdupreneurPro {
 		// Orphan lessons
 		$orphan_lessons = $wpdb->get_results( $wpdb->prepare( "SELECT title FROM {$wpdb->prefix}edu_lessons WHERE course_id = %d AND module_id = 0 ORDER BY order_index ASC", $course_id ) );
 		if ( ! empty( $orphan_lessons ) ) {
-			echo '<div class="edu-card" style="margin-bottom:10px;">';
+			echo '<div class="edu-card" style="margin-bottom:10px;"><h3>' . __( 'Introductory Lessons', 'edupreneur-pro' ) . '</h3>';
 			echo '<ul>';
 			foreach ( $orphan_lessons as $lesson ) {
 				echo '<li>' . esc_html( $lesson->title ) . '</li>';
@@ -362,7 +362,8 @@ final class EdupreneurPro {
 				$orphan_lessons = $wpdb->get_results( $wpdb->prepare( "SELECT id, title FROM {$wpdb->prefix}edu_lessons WHERE course_id = %d AND module_id = 0 ORDER BY order_index ASC", $course->id ) );
 				if ( ! empty( $orphan_lessons ) ) {
 					echo '<div class="edu-module-summary" style="margin-top:15px; border-top:1px solid #f0f0f0; padding-top:10px;">';
-					echo '<ul style="margin: 5px 0 0 15px; list-style: disc;">';
+					echo '<strong style="font-size: 0.85em; color: #888; text-transform:uppercase;">' . esc_html__( 'Introduction', 'edupreneur-pro' ) . '</strong>';
+					echo '<ul style="margin: 5px 0 0 0; padding:0;">';
 					foreach ( $orphan_lessons as $lesson ) {
 						$is_done = $wpdb->get_var( $wpdb->prepare( "SELECT completed FROM {$wpdb->prefix}edu_progress WHERE student_id = %d AND lesson_id = %d", $student_id, $lesson->id ) );
 						$done_class = $is_done ? 'is-completed' : '';

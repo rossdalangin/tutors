@@ -21,6 +21,10 @@ class LessonController extends WP_REST_Controller {
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_items' ),
 				'permission_callback' => function() { return current_user_can( 'read' ); },
+				'args'                => array(
+					'course_id' => array( 'required' => true, 'sanitize_callback' => 'absint' ),
+					'module_id' => array( 'required' => false, 'sanitize_callback' => 'intval' ),
+				),
 			),
 			array(
 				'methods'             => WP_REST_Server::CREATABLE,
@@ -80,6 +84,12 @@ class LessonController extends WP_REST_Controller {
 
 	public function get_items( $request ) {
 		$course_id = intval( $request['course_id'] );
+		$params = $request->get_params();
+
+		if ( array_key_exists( 'module_id', $params ) ) {
+			return new WP_REST_Response( $this->repository->get_by_module( $course_id, intval( $params['module_id'] ) ), 200 );
+		}
+
 		return new WP_REST_Response( $this->repository->get_by_course( $course_id ), 200 );
 	}
 

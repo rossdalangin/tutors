@@ -15,6 +15,10 @@ class LessonRepository {
 		global $wpdb;
 		return $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$this->table} WHERE course_id = %d ORDER BY order_index ASC", $course_id ) );
 	}
+	public function get_by_module( $course_id, $module_id ) {
+		global $wpdb;
+		return $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$this->table} WHERE course_id = %d AND module_id = %d ORDER BY order_index ASC", $course_id, $module_id ) );
+	}
 	public function create( $data ) {
 		global $wpdb;
 		return $wpdb->insert( $this->table, $data ) ? $wpdb->insert_id : false;
