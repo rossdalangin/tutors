@@ -72,26 +72,86 @@ class SystemService {
 		) );
 		$course_id = $wpdb->insert_id;
 
+		// Add an orphan introductory lesson
+		$wpdb->insert( "{$wpdb->prefix}edu_lessons", array(
+			'course_id'   => $course_id,
+			'module_id'   => 0,
+			'title'       => 'Welcome: Course Overview & Mindset',
+			'content'     => 'Welcome to the course! In this introductory lesson, we will cover the roadmap to your success and set the right mindset for the journey ahead.',
+			'lesson_type' => 'video',
+			'video_url'   => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+			'order_index' => 0
+		) );
+
 		// Add modules
-		$modules = array( 'Mindset & Foundations', 'Product Development', 'Marketing Mastery' );
-		foreach ( $modules as $index => $m_title ) {
+		$modules = array(
+			'Mindset & Foundations' => array(
+				array('type' => 'video', 'title' => 'The Entrepreneurial Mindset', 'content' => 'Understand the psychological foundations of business.'),
+				array('type' => 'quiz', 'title' => 'Foundations Knowledge Check', 'content' => 'Test your understanding of the core foundations.')
+			),
+			'Product Development' => array(
+				array('type' => 'video', 'title' => 'Building Your MVP', 'content' => 'How to build and iterate on your minimum viable product.'),
+				array('type' => 'assignment', 'title' => 'Project: Draft Your Product Specs', 'content' => 'Submit your initial product specifications for review.')
+			),
+			'Marketing Mastery' => array(
+				array('type' => 'video', 'title' => 'Scaling Your Reach', 'content' => 'Advanced marketing strategies for growth.'),
+				array('type' => 'pdf', 'title' => 'Marketing Toolkit & Resources', 'content' => 'Download our exclusive marketing templates and resource lists.')
+			)
+		);
+
+		$m_idx = 0;
+		foreach ( $modules as $m_title => $lessons ) {
 			$wpdb->insert( "{$wpdb->prefix}edu_modules", array(
 				'course_id'   => $course_id,
 				'title'       => $m_title,
-				'order_index' => $index
+				'order_index' => $m_idx++
 			) );
 			$module_id = $wpdb->insert_id;
 
-			// Add lessons
-			for ( $i = 1; $i <= 3; $i++ ) {
+			foreach ( $lessons as $l_idx => $l_data ) {
 				$wpdb->insert( "{$wpdb->prefix}edu_lessons", array(
 					'course_id'   => $course_id,
 					'module_id'   => $module_id,
-					'title'       => "Lesson $i: Deep dive into " . strtolower( $m_title ),
-					'content'     => 'In this lesson, we explore the core principles...',
-					'lesson_type' => 'video',
-					'order_index' => $i
+					'title'       => $l_data['title'],
+					'content'     => $l_data['content'],
+					'lesson_type' => $l_data['type'],
+					'video_url'   => $l_data['type'] === 'video' ? 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' : '',
+					'order_index' => $l_idx
 				) );
+				$lesson_id = $wpdb->insert_id;
+
+				if ( $l_data['type'] === 'quiz' ) {
+					$questions = array(
+						array('q' => 'What is the most important trait for a tutor?', 'a' => array('Patience', 'Empathy', 'Expertise', 'All of the above'), 'c' => 3),
+						array('q' => 'Should you drip-feed content?', 'a' => array('Yes, always', 'No, never', 'It depends on the course', 'Only for free courses'), 'c' => 2)
+					);
+					$wpdb->insert( "{$wpdb->prefix}edu_quizzes", array(
+						'lesson_id' => $lesson_id,
+						'title'     => 'Quiz: ' . $l_data['title'],
+						'questions' => json_encode($questions)
+					) );
+				}
+
+				if ( $l_data['type'] === 'assignment' ) {
+					$wpdb->insert( "{$wpdb->prefix}edu_assignments", array(
+						'lesson_id'    => $lesson_id,
+						'title'        => 'Assignment: ' . $l_data['title'],
+						'instructions' => 'Please provide a 2-page document outlining your product features, target audience, and pricing strategy.'
+					) );
+				}
+
+				if ( $l_data['type'] === 'pdf' ) {
+					$wpdb->insert( "{$wpdb->prefix}edu_resources", array(
+						'lesson_id' => $lesson_id,
+						'title'     => 'Strategic Marketing Plan Template',
+						'url'       => 'https://example.com/marketing-template.pdf'
+					) );
+					$wpdb->insert( "{$wpdb->prefix}edu_resources", array(
+						'lesson_id' => $lesson_id,
+						'title'     => 'Resource List 2024',
+						'url'       => 'https://example.com/resources.pdf'
+					) );
+				}
 			}
 		}
 
