@@ -46,10 +46,10 @@ final class EdupreneurPro {
 		add_action( 'plugins_loaded', array( $this, 'on_plugins_loaded' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
 		add_action( 'init', array( $this, 'track_affiliate_referral' ) );
+		add_action( 'init', array( $this, 'handle_lesson_completion' ) );
 		add_action( 'admin_init', array( $this, 'ensure_admin_capabilities' ) );
 		add_shortcode( 'edu_student_dashboard', array( $this, 'render_student_dashboard' ) );
 		add_filter( 'the_content', array( $this, 'handle_lesson_display' ) );
-		add_action( 'template_redirect', array( $this, 'handle_lesson_completion' ) );
 		register_activation_hook( __FILE__, array( $this, 'activate' ) );
 	}
 
@@ -77,6 +77,8 @@ final class EdupreneurPro {
 	}
 
 	public function handle_lesson_display( $content ) {
+		global $wpdb;
+
 		if ( isset( $_GET['buy_course'] ) ) {
 			$shortcodes = new \EdupreneurPro\Modules\CourseBuilder\Services\ShortcodeService();
 			return $shortcodes->render_checkout();
@@ -86,24 +88,30 @@ final class EdupreneurPro {
 			return $this->render_category_courses( sanitize_text_field( $_GET['edu_category'] ) );
 		}
 
-		if ( isset( $_GET['edu_course_id'] ) ) {
+		$lesson_id = 0;
+
+		if ( isset( $_GET['edu_lesson'] ) ) {
+			$lesson_id = intval( $_GET['edu_lesson'] );
+		}
+
+		if ( ! $lesson_id && isset( $_GET['edu_course_id'] ) ) {
 			if ( is_user_logged_in() ) {
 				$course_id = intval( $_GET['edu_course_id'] );
 				$next_lesson = $wpdb->get_var( $wpdb->prepare( "SELECT l.id FROM {$wpdb->prefix}edu_lessons l LEFT JOIN {$wpdb->prefix}edu_progress p ON l.id = p.lesson_id AND p.student_id = %d WHERE l.course_id = %d AND (p.completed IS NULL OR p.completed = 0) ORDER BY l.order_index ASC LIMIT 1", get_current_user_id(), $course_id ) );
 				if ( $next_lesson ) {
-					wp_safe_redirect( add_query_arg( 'edu_lesson', $next_lesson, remove_query_arg( 'edu_course_id' ) ) );
-					exit;
+					$lesson_id = $next_lesson;
 				}
 			}
-			return $this->render_course_sales_page( intval( $_GET['edu_course_id'] ) );
+
+			if ( ! $lesson_id ) {
+				return $this->render_course_sales_page( intval( $_GET['edu_course_id'] ) );
+			}
 		}
 
-		if ( ! isset( $_GET['edu_lesson'] ) ) {
+		if ( ! $lesson_id ) {
 			return $content;
 		}
 
-		$lesson_id = intval( $_GET['edu_lesson'] );
-		global $wpdb;
 		$lesson = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}edu_lessons WHERE id = %d", $lesson_id ) );
 
 		if ( ! $lesson ) {
@@ -121,9 +129,11 @@ final class EdupreneurPro {
 			return '<div class="edu-card edu-warning"><h3>' . esc_html__( 'Lesson Locked', 'edupreneur-pro' ) . '</h3><p>' . esc_html__( 'This lesson is not yet available based on your enrollment drip schedule.', 'edupreneur-pro' ) . '</p></div>';
 		}
 
+		$back_url = ( is_admin() && isset( $_GET['page'] ) ) ? admin_url( 'admin.php?page=' . sanitize_text_field( $_GET['page'] ) ) : get_permalink();
+
 		ob_start();
 		echo '<div class="edu-lesson-player">';
-		echo '<a href="' . get_permalink() . '" class="edu-btn edu-btn-small" style="margin-bottom:20px;">' . esc_html__( '← Back to Dashboard', 'edupreneur-pro' ) . '</a>';
+		echo '<a href="' . $back_url . '" class="edu-btn edu-btn-small" style="margin-bottom:20px;">' . esc_html__( '← Back to Dashboard', 'edupreneur-pro' ) . '</a>';
 		echo '<h1>' . esc_html( $lesson->title ) . '</h1>';
 
 		if ( ! empty( $lesson->video_url ) ) {
@@ -160,6 +170,7 @@ final class EdupreneurPro {
 		if ( ! $course ) return '<p>' . __( 'Course not found.', 'edupreneur-pro' ) . '</p>';
 
 		$instructor = get_userdata( $course->instructor_id );
+		$base_url = ( is_admin() && isset( $_GET['page'] ) ) ? admin_url( 'admin.php?page=' . sanitize_text_field( $_GET['page'] ) ) : get_permalink();
 
 		ob_start();
 		echo '<div class="edu-sales-page">';
@@ -168,7 +179,7 @@ final class EdupreneurPro {
 		echo '<p>' . wp_kses_post( $course->description ) . '</p>';
 		echo '<p><strong>' . __( 'Instructor:', 'edupreneur-pro' ) . '</strong> ' . ( $instructor ? $instructor->display_name : 'Expert' ) . '</p>';
 		echo '<div style="font-size:1.5em; color:var(--edu-primary); margin:20px 0;">$' . number_format( $course->price, 2 ) . '</div>';
-		echo '<a href="' . add_query_arg( 'buy_course', $course->id, get_permalink() ) . '" class="edu-btn edu-btn-block">' . __( 'Enroll Now', 'edupreneur-pro' ) . '</a>';
+		echo '<a href="' . add_query_arg( 'buy_course', $course->id, $base_url ) . '" class="edu-btn edu-btn-block">' . __( 'Enroll Now', 'edupreneur-pro' ) . '</a>';
 		echo '</div>';
 
 		echo '<h2>' . __( 'Course Curriculum', 'edupreneur-pro' ) . '</h2>';
@@ -189,6 +200,7 @@ final class EdupreneurPro {
 	public function render_category_courses( $category ) {
 		global $wpdb;
 		$courses = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}edu_courses WHERE category = %s AND status = 'publish'", $category ) );
+		$base_url = ( is_admin() && isset( $_GET['page'] ) ) ? admin_url( 'admin.php?page=' . sanitize_text_field( $_GET['page'] ) ) : get_permalink();
 
 		ob_start();
 		echo '<h1>' . sprintf( __( 'Courses in %s', 'edupreneur-pro' ), esc_html( $category ) ) . '</h1>';
@@ -197,7 +209,7 @@ final class EdupreneurPro {
 			echo '<div class="edu-card">';
 			echo '<h3>' . esc_html( $course->title ) . '</h3>';
 			echo '<p>' . esc_html( wp_trim_words( $course->description, 15 ) ) . '</p>';
-			echo '<a href="' . add_query_arg( 'edu_course_id', $course->id, get_permalink() ) . '" class="edu-btn">' . __( 'View Details', 'edupreneur-pro' ) . '</a>';
+			echo '<a href="' . add_query_arg( 'edu_course_id', $course->id, $base_url ) . '" class="edu-btn">' . __( 'View Details', 'edupreneur-pro' ) . '</a>';
 			echo '</div>';
 		}
 		echo '</div>';
@@ -218,6 +230,8 @@ final class EdupreneurPro {
 			$student_id
 		) );
 
+		$base_url = ( is_admin() && isset( $_GET['page'] ) ) ? admin_url( 'admin.php?page=' . sanitize_text_field( $_GET['page'] ) ) : get_permalink();
+
 		ob_start();
 		echo '<div class="edu-student-dashboard">';
 		echo '<h2>' . esc_html__( 'My Learning Journey', 'edupreneur-pro' ) . '</h2>';
@@ -225,7 +239,7 @@ final class EdupreneurPro {
 
 		if ( empty( $courses ) ) {
 			echo '<div class="edu-grid"><div class="edu-card" style="grid-column: 1/-1;"><h3>' . esc_html__( 'No Courses Found', 'edupreneur-pro' ) . '</h3><p>' . esc_html__( 'You haven\'t enrolled in any courses yet.', 'edupreneur-pro' ) . '</p>';
-			echo '<a href="' . get_permalink() . '" class="edu-btn">' . esc_html__( 'Browse Course Catalog', 'edupreneur-pro' ) . '</a></div></div>';
+			echo '<a href="' . $base_url . '" class="edu-btn">' . esc_html__( 'Browse Course Catalog', 'edupreneur-pro' ) . '</a></div></div>';
 		} else {
 			echo '<div class="edu-grid">';
 			foreach ( $courses as $course ) {
@@ -257,7 +271,7 @@ final class EdupreneurPro {
 							foreach ( $lessons as $lesson ) {
 								$is_done = $wpdb->get_var( $wpdb->prepare( "SELECT completed FROM {$wpdb->prefix}edu_progress WHERE student_id = %d AND lesson_id = %d", $student_id, $lesson->id ) );
 								$style = $is_done ? 'text-decoration: line-through; color: #aaa;' : 'font-weight: 500;';
-								echo '<li style="margin-bottom:5px;"><a href="' . add_query_arg( array( 'edu_lesson' => $lesson->id ), get_permalink() ) . '" style="' . $style . '">' . esc_html( $lesson->title ) . '</a></li>';
+								echo '<li style="margin-bottom:5px;"><a href="' . add_query_arg( array( 'edu_lesson' => $lesson->id ), $base_url ) . '" style="' . $style . '">' . esc_html( $lesson->title ) . '</a></li>';
 							}
 							echo '</ul>';
 						}
@@ -265,7 +279,7 @@ final class EdupreneurPro {
 					}
 				}
 
-				echo '<a href="' . add_query_arg( array( 'edu_course_id' => $course->id ), get_permalink() ) . '" class="edu-btn edu-btn-block" style="margin-top:20px;">' . esc_html__( 'Continue Learning', 'edupreneur-pro' ) . '</a>';
+				echo '<a href="' . add_query_arg( array( 'edu_course_id' => $course->id ), $base_url ) . '" class="edu-btn edu-btn-block" style="margin-top:20px;">' . esc_html__( 'Continue Learning', 'edupreneur-pro' ) . '</a>';
 				echo '</div>';
 			}
 			echo '</div>';

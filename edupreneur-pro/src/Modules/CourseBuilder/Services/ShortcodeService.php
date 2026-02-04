@@ -34,6 +34,7 @@ class ShortcodeService {
 	public function render_categories() {
 		global $wpdb;
 		$categories = $wpdb->get_results( "SELECT DISTINCT category FROM {$wpdb->prefix}edu_courses WHERE status = 'publish'" );
+		$base_url = ( is_admin() && isset( $_GET['page'] ) ) ? admin_url( 'admin.php?page=' . sanitize_text_field( $_GET['page'] ) ) : get_permalink();
 
 		$output = '<div class="edu-grid">';
 		foreach ( $categories as $cat ) {
@@ -41,7 +42,7 @@ class ShortcodeService {
 			$output .= '<div class="edu-card">';
 			$output .= '<h3>' . esc_html( $cat_name ) . '</h3>';
 			$output .= '<p>' . sprintf( __( 'Explore all our %s courses.', 'edupreneur-pro' ), esc_html( $cat_name ) ) . '</p>';
-			$output .= '<a href="' . add_query_arg( 'edu_category', $cat_name, get_permalink() ) . '" class="edu-btn">' . __( 'View Category', 'edupreneur-pro' ) . '</a>';
+			$output .= '<a href="' . add_query_arg( 'edu_category', $cat_name, $base_url ) . '" class="edu-btn">' . __( 'View Category', 'edupreneur-pro' ) . '</a>';
 			$output .= '</div>';
 		}
 		$output .= '</div>';
@@ -78,6 +79,8 @@ class ShortcodeService {
 
 		if ( ! $course ) return '<p>' . __( 'Course not found.', 'edupreneur-pro' ) . '</p>';
 
+		$base_url = ( is_admin() && isset( $_GET['page'] ) ) ? admin_url( 'admin.php?page=' . sanitize_text_field( $_GET['page'] ) ) : get_permalink();
+
 		if ( isset( $_POST['edu_confirm_purchase'] ) && check_admin_referer( 'edu_checkout' ) ) {
 			// Simulate order creation
 			$wpdb->insert( "{$wpdb->prefix}edu_orders", array(
@@ -94,7 +97,7 @@ class ShortcodeService {
 				'status'     => 'active'
 			) );
 
-			return '<div class="updated"><p>' . __( 'Purchase successful! You are now enrolled.', 'edupreneur-pro' ) . '</p><a href="' . get_permalink() . '" class="edu-btn">' . __( 'Go to Dashboard', 'edupreneur-pro' ) . '</a></div>';
+			return '<div class="updated"><p>' . __( 'Purchase successful! You are now enrolled.', 'edupreneur-pro' ) . '</p><a href="' . $base_url . '" class="edu-btn">' . __( 'Go to Dashboard', 'edupreneur-pro' ) . '</a></div>';
 		}
 
 		$output = '<div class="edu-card" style="max-width: 500px; margin: 0 auto;">';
@@ -113,12 +116,13 @@ class ShortcodeService {
 	}
 
 	private function get_course_html( $course ) {
+		$base_url = ( is_admin() && isset( $_GET['page'] ) ) ? admin_url( 'admin.php?page=' . sanitize_text_field( $_GET['page'] ) ) : get_permalink();
 		$output = '<div class="edu-card">';
 		$output .= '<h3>' . esc_html( $course->title ) . '</h3>';
 		$output .= '<p>' . esc_html( wp_trim_words( $course->description, 15 ) ) . '</p>';
 		$output .= '<div style="margin-top:15px; display:flex; gap:10px;">';
-		$output .= '<a href="' . add_query_arg( 'edu_course_id', $course->id, get_permalink() ) . '" class="edu-btn">' . __( 'Sales Page', 'edupreneur-pro' ) . '</a>';
-		$output .= '<a href="' . add_query_arg( 'buy_course', $course->id, get_permalink() ) . '" class="edu-btn" style="background:#28a745;">' . __( 'Buy Now', 'edupreneur-pro' ) . '</a>';
+		$output .= '<a href="' . add_query_arg( 'edu_course_id', $course->id, $base_url ) . '" class="edu-btn">' . __( 'Sales Page', 'edupreneur-pro' ) . '</a>';
+		$output .= '<a href="' . add_query_arg( 'buy_course', $course->id, $base_url ) . '" class="edu-btn" style="background:#28a745;">' . __( 'Buy Now', 'edupreneur-pro' ) . '</a>';
 		$output .= '</div>';
 		$output .= '</div>';
 		return $output;

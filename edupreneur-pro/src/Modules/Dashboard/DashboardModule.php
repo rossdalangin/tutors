@@ -206,12 +206,19 @@ class DashboardModule implements ModuleInterface {
 	}
 
 	public function render_my_courses_page() {
+		$plugin = \EdupreneurPro::instance();
+
+		if ( isset( $_GET['edu_lesson'] ) || isset( $_GET['edu_course_id'] ) || isset( $_GET['buy_course'] ) || isset( $_GET['edu_category'] ) ) {
+			echo '<div class="edu-admin-wrap">';
+			echo $plugin->handle_lesson_display( '' );
+			echo '</div>';
+			return;
+		}
+
 		echo '<div class="edu-admin-wrap">';
 		echo '<header class="edu-header"><h1>' . esc_html__( 'My Courses', 'edupreneur-pro' ) . '</h1>';
 		echo '<p>' . esc_html__( 'Pick up where you left off and master new skills.', 'edupreneur-pro' ) . '</p></header>';
 
-		// Use the same logic as the shortcode but rendered in admin
-		$plugin = \EdupreneurPro::instance();
 		echo $plugin->render_student_dashboard();
 		echo '</div>';
 	}
