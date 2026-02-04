@@ -20,13 +20,33 @@ class ShortcodeService {
 	}
 
 	public function render_recent_courses( $atts ) {
-		$atts = shortcode_atts( array( 'limit' => 10 ), $atts );
+		$atts = shortcode_atts( array(
+			'limit'    => 10,
+			'category' => '' // slug
+		), $atts );
 		global $wpdb;
-		$courses = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}edu_courses WHERE status = 'publish' ORDER BY created_at DESC LIMIT %d", $atts['limit'] ) );
+
+		$query = "SELECT * FROM {$wpdb->prefix}edu_courses WHERE status = 'publish'";
+		$params = array();
+
+		if ( ! empty( $atts['category'] ) ) {
+			$query .= " AND (category = %s OR category_id = (SELECT id FROM {$wpdb->prefix}edu_categories WHERE slug = %s))";
+			$params[] = $atts['category'];
+			$params[] = $atts['category'];
+		}
+
+		$query .= " ORDER BY created_at DESC LIMIT %d";
+		$params[] = intval( $atts['limit'] );
+
+		$courses = $wpdb->get_results( $wpdb->prepare( $query, ...$params ) );
 
 		$output = '<div class="edu-grid">';
-		foreach ( $courses as $course ) {
-			$output .= $this->get_course_html( $course );
+		if ( empty( $courses ) ) {
+			$output .= '<p>' . __( 'No courses found matching your criteria.', 'edupreneur-pro' ) . '</p>';
+		} else {
+			foreach ( $courses as $course ) {
+				$output .= $this->get_course_html( $course );
+			}
 		}
 		$output .= '</div>';
 		return $output;

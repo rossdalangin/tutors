@@ -67,9 +67,12 @@ class AffiliateModule implements ModuleInterface {
 		wp_nonce_field( 'edu_asset_action' );
 		echo '<h3>Add/Edit Asset</h3>';
 		echo '<input type="hidden" name="asset_id" id="asset_id">';
-		echo '<div class="edu-form-group"><label>Title</label><input type="text" name="title" id="asset_title" required></div>';
-		echo '<div class="edu-form-group"><label>Type</label><select name="asset_type" id="asset_type"><option>text</option><option>banner</option></select></div>';
-		echo '<div class="edu-form-group"><label>Content (Text or Image URL)</label><textarea name="content" id="asset_content" rows="5" required></textarea></div>';
+		echo '<div class="edu-form-group"><label>Title</label><input type="text" name="title" id="asset_title" required>';
+		echo '<p class="edu-field-caption">' . esc_html__( 'Descriptive name for this promotional tool.', 'edupreneur-pro' ) . '</p></div>';
+		echo '<div class="edu-form-group"><label>Type</label><select name="asset_type" id="asset_type"><option value="text">Email Swipe</option><option value="banner">Banner URL</option></select>';
+		echo '<p class="edu-field-caption">' . esc_html__( 'Choose whether this is a text-based email swipe or a graphical banner link.', 'edupreneur-pro' ) . '</p></div>';
+		echo '<div class="edu-form-group"><label>Content/URL</label><textarea name="content" id="asset_content" rows="5" required></textarea>';
+		echo '<p class="edu-field-caption">' . esc_html__( 'The actual promotional text or the full image URL for the banner.', 'edupreneur-pro' ) . '</p></div>';
 		echo '<button type="submit" name="edu_asset_action" value="save" class="edu-btn">Save Asset</button></form>';
 
 		echo '<table class="wp-list-table widefat fixed striped"><thead><tr><th>Title</th><th>Type</th><th>Actions</th></tr></thead><tbody>';

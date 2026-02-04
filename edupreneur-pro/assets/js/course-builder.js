@@ -46,20 +46,24 @@
                             <div class="edu-form-group">
                                 <label>Title</label>
                                 <input type="text" id="entity-title" placeholder="Enter title...">
+                                <p class="edu-field-caption">The primary name of your course, module, or lesson as it will appear to students.</p>
                             </div>
                             <div class="edu-form-group" id="course-category-group" style="display:none;">
                                 <label>Category</label>
                                 <select id="course-category">
                                     <option value="0">General</option>
                                 </select>
+                                <p class="edu-field-caption">Helps organize your courses in the catalog and makes them easier to find.</p>
                             </div>
                             <div class="edu-form-group" id="course-price-group" style="display:none;">
                                 <label>Price ($)</label>
                                 <input type="number" id="course-price" step="0.01" min="0" value="0.00">
+                                <p class="edu-field-caption">The one-time enrollment fee for this course. Set to 0.00 for free access.</p>
                             </div>
                             <div class="edu-form-group" id="desc-group">
                                 <label>Description</label>
                                 <textarea id="entity-desc" placeholder="Describe the learning objective..."></textarea>
+                                <p class="edu-field-caption">Provide a detailed overview of what students will learn or achieve in this section.</p>
                             </div>
                             <div class="edu-form-group" id="lesson-settings" style="display:none;">
                                 <label>Lesson Type</label>
@@ -74,23 +78,30 @@
                                 <div style="margin-top:10px;">
                                     <label>Video/Resource URL</label>
                                     <input type="text" id="lesson-video" placeholder="https://...">
+                                    <p class="edu-field-caption">For video lessons, paste your YouTube or Vimeo link here. For other types, this is the primary resource link.</p>
                                 </div>
                                 <div style="margin-top:10px;">
                                     <label>Drip Release (Days after enrollment)</label>
                                     <input type="number" id="lesson-drip" value="0" min="0">
+                                    <p class="edu-field-caption">Delay access to this lesson until a certain number of days after the student enrolls. 0 means instant access.</p>
                                 </div>
                                 <div id="quiz-builder-section" style="display:none; margin-top:10px;">
-                                    <label>Quiz Questions (MCQ/JSON)</label>
-                                    <textarea id="quiz-data" placeholder='[{"q": "Is WP an LMS?", "a": ["Yes", "No"], "c": 0}]'></textarea>
+                                    <label>Quiz Questions</label>
+                                    <p class="edu-field-caption" style="margin-bottom:10px;">Build your multiple-choice quiz below. Add questions and mark the correct choice for each.</p>
+                                    <div id="quiz-questions-list"></div>
+                                    <button type="button" class="edu-btn edu-btn-small" id="add-quiz-question">+ Add Question</button>
+                                    <input type="hidden" id="quiz-data">
                                 </div>
                                 <div id="assignment-builder-section" style="display:none; margin-top:10px;">
                                     <label>Assignment Instructions</label>
                                     <textarea id="assignment-data" placeholder="Detailed tasks for the student..."></textarea>
+                                    <p class="edu-field-caption">Explain the requirements for the assignment. Students will need to complete this before proceeding if progress logic is enabled.</p>
                                 </div>
                                 <div style="margin-top:10px;">
                                     <label>Resources (PDF/Docs)</label>
                                     <div id="lesson-resources-list"></div>
                                     <button type="button" class="edu-btn edu-btn-small" id="add-lesson-resource">+ Add Resource</button>
+                                    <p class="edu-field-caption">Upload or link to additional materials like worksheets, checklists, or reading lists.</p>
                                 </div>
                             </div>
                         </div>
@@ -125,6 +136,12 @@
 
             $(document).on('click', '#add-lesson-resource', () => self.addResourceField());
             $(document).on('click', '.remove-resource', (e) => $(e.currentTarget).closest('.resource-row').remove());
+
+            // Quiz builder events
+            $(document).on('click', '#add-quiz-question', () => self.addQuizQuestion());
+            $(document).on('click', '.remove-quiz-question', (e) => $(e.currentTarget).closest('.quiz-question-box').remove());
+            $(document).on('click', '.add-quiz-answer', (e) => self.addQuizAnswer($(e.currentTarget).closest('.quiz-question-box').find('.quiz-answers-list')));
+            $(document).on('click', '.remove-quiz-answer', (e) => $(e.currentTarget).closest('.quiz-answer-row').remove());
         },
 
         toggleLessonExtraFields: function() {
@@ -138,9 +155,44 @@
                 <div class="resource-row" style="display:flex; gap:5px; margin-bottom:5px;">
                     <input type="text" class="res-title" placeholder="Title" value="${title}" style="width:40%;">
                     <input type="text" class="res-url" placeholder="URL" value="${url}" style="width:50%;">
-                    <span class="remove-resource" style="cursor:pointer;">❌</span>
+                    <span class="remove-resource" style="cursor:pointer; line-height:35px;">❌</span>
                 </div>
             `);
+        },
+
+        addQuizQuestion: function(qText = '', answers = [], correctIdx = 0) {
+            const $qBox = $(`
+                <div class="quiz-question-box" style="border:1px solid #eee; padding:15px; margin-bottom:15px; border-radius:8px; background:#fafafa;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <strong>Question</strong>
+                        <span class="remove-quiz-question" style="cursor:pointer; color:red;">Remove Q</span>
+                    </div>
+                    <input type="text" class="q-text" placeholder="Enter your question here..." value="${qText}" style="margin-bottom:10px; font-weight:600;">
+                    <div class="quiz-answers-list"></div>
+                    <button type="button" class="edu-btn-link add-quiz-answer">+ Add Choice</button>
+                </div>
+            `);
+            $('#quiz-questions-list').append($qBox);
+            const $ansList = $qBox.find('.quiz-answers-list');
+            if (answers.length > 0) {
+                answers.forEach((ans, idx) => this.addQuizAnswer($ansList, ans, idx === correctIdx));
+            } else {
+                this.addQuizAnswer($ansList, 'Yes', true);
+                this.addQuizAnswer($ansList, 'No', false);
+            }
+        },
+
+        addQuizAnswer: function($list, text = '', isCorrect = false) {
+            const qIdx = $('.quiz-question-box').index($list.closest('.quiz-question-box'));
+            $list.append(`
+                <div class="quiz-answer-row" style="display:flex; gap:10px; align-items:center; margin-bottom:5px;">
+                    <input type="radio" name="correct_${qIdx}" ${isCorrect ? 'checked' : ''} class="is-correct">
+                    <input type="text" class="ans-text" value="${text}" placeholder="Choice text..." style="flex-grow:1;">
+                    <span class="remove-quiz-answer" style="cursor:pointer;">❌</span>
+                </div>
+            `);
+            // Update names to ensure radio grouping works within the question
+            $list.find('input[type="radio"]').attr('name', 'correct_ans_' + qIdx);
         },
 
         initSortable: function() {
@@ -202,6 +254,7 @@
                 $('#desc-group').show();
                 $('#course-category-group').hide();
                 $('#course-price-group').hide();
+                $('#quiz-questions-list').empty();
                 this.toggleLessonExtraFields();
             } else if (type === 'module') {
                 $('#lesson-settings').hide();
@@ -247,7 +300,14 @@
                         $('#lesson-type').val(data.lesson_type || 'video');
                         $('#lesson-video').val(data.video_url || '');
                         $('#lesson-drip').val(data.drip_days || 0);
-                        if (data.quiz) $('#quiz-data').val(data.quiz.questions);
+                        if (data.quiz && data.quiz.questions) {
+                            try {
+                                const qData = JSON.parse(data.quiz.questions);
+                                if (Array.isArray(qData)) {
+                                    qData.forEach(q => self.addQuizQuestion(q.q, q.a, q.c));
+                                }
+                            } catch(e) { console.error('Error parsing quiz data', e); }
+                        }
                         if (data.assignment) $('#assignment-data').val(data.assignment.instructions);
                         this.toggleLessonExtraFields();
                         if (data.resources) {
@@ -415,7 +475,27 @@
                 data.lesson_type = $('#lesson-type').val();
                 data.video_url = $('#lesson-video').val();
                 data.drip_days = $('#lesson-drip').val();
-                data.quiz_data = $('#quiz-data').val();
+
+                // Collect Quiz Data
+                if (data.lesson_type === 'quiz') {
+                    let quizArray = [];
+                    $('.quiz-question-box').each(function() {
+                        let qText = $(this).find('.q-text').val();
+                        let answers = [];
+                        let correctIdx = 0;
+                        $(this).find('.quiz-answer-row').each(function(idx) {
+                            answers.push($(this).find('.ans-text').val());
+                            if ($(this).find('.is-correct').is(':checked')) {
+                                correctIdx = idx;
+                            }
+                        });
+                        quizArray.push({ q: qText, a: answers, c: correctIdx });
+                    });
+                    data.quiz_data = JSON.stringify(quizArray);
+                } else {
+                    data.quiz_data = '';
+                }
+
                 data.assignment_data = $('#assignment-data').val();
                 data.resources = [];
                 $('.resource-row').each(function() {

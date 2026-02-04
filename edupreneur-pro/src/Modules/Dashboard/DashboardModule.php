@@ -347,8 +347,10 @@ class DashboardModule implements ModuleInterface {
 		echo '<div class="edu-card"><h3>' . esc_html__( 'Payment Gateway Keys', 'edupreneur-pro' ) . '</h3>';
 		echo '<form method="post" style="margin-top:20px;">';
 		wp_nonce_field( 'edu_system_action' );
-		echo '<div class="edu-form-group"><label>Stripe Secret Key</label><input type="password" name="stripe_key" value="' . esc_attr( get_option( 'edu_stripe_key' ) ) . '"></div>';
-		echo '<div class="edu-form-group"><label>PayPal Business Email</label><input type="email" name="paypal_email" value="' . esc_attr( get_option( 'edu_paypal_email' ) ) . '"></div>';
+		echo '<div class="edu-form-group"><label>Stripe Secret Key</label><input type="password" name="stripe_key" value="' . esc_attr( get_option( 'edu_stripe_key' ) ) . '">';
+		echo '<p class="edu-field-caption">' . esc_html__( 'Your Stripe Secret Key from the Stripe Dashboard. Required for processing credit card payments.', 'edupreneur-pro' ) . '</p></div>';
+		echo '<div class="edu-form-group"><label>PayPal Business Email</label><input type="email" name="paypal_email" value="' . esc_attr( get_option( 'edu_paypal_email' ) ) . '">';
+		echo '<p class="edu-field-caption">' . esc_html__( 'The email address associated with your PayPal Business account for receiving payments.', 'edupreneur-pro' ) . '</p></div>';
 		echo '<button type="submit" name="edu_action" value="save_keys" class="edu-btn">' . esc_html__( 'Save API Keys', 'edupreneur-pro' ) . '</button>';
 		echo '</form></div>';
 		echo '</div></div>';
@@ -376,8 +378,10 @@ class DashboardModule implements ModuleInterface {
 		wp_nonce_field( 'edu_cat_action' );
 		echo '<h3>Add/Edit Category</h3>';
 		echo '<input type="hidden" name="cat_id" id="cat_id">';
-		echo '<div class="edu-form-group"><label>Name</label><input type="text" name="name" id="cat_name" required></div>';
-		echo '<div class="edu-form-group"><label>Description</label><textarea name="description" id="cat_desc" rows="3"></textarea></div>';
+		echo '<div class="edu-form-group"><label>Name</label><input type="text" name="name" id="cat_name" required>';
+		echo '<p class="edu-field-caption">' . esc_html__( 'The display name for this category (e.g., Business, Web Development).', 'edupreneur-pro' ) . '</p></div>';
+		echo '<div class="edu-form-group"><label>Description</label><textarea name="description" id="cat_desc" rows="3"></textarea>';
+		echo '<p class="edu-field-caption">' . esc_html__( 'A brief summary of what courses in this category cover. Shown on category list pages.', 'edupreneur-pro' ) . '</p></div>';
 		echo '<button type="submit" name="edu_cat_action" value="save" class="edu-btn">Save Category</button></form>';
 
 		echo '<table class="wp-list-table widefat fixed striped"><thead><tr><th>Name</th><th>Slug</th><th>Actions</th></tr></thead><tbody>';
@@ -418,9 +422,12 @@ class DashboardModule implements ModuleInterface {
 		wp_nonce_field( 'edu_kb_action' );
 		echo '<h3>Add/Edit Article</h3>';
 		echo '<input type="hidden" name="kb_id" id="kb_id">';
-		echo '<div class="edu-form-group"><label>Title</label><input type="text" name="title" id="kb_title" required></div>';
-		echo '<div class="edu-form-group"><label>Category</label><input type="text" name="category" id="kb_category" placeholder="e.g. general, payments"></div>';
-		echo '<div class="edu-form-group"><label>Content</label><textarea name="content" id="kb_content" rows="5" required></textarea></div>';
+		echo '<div class="edu-form-group"><label>Title</label><input type="text" name="title" id="kb_title" required>';
+		echo '<p class="edu-field-caption">' . esc_html__( 'The headline of the support article or guide.', 'edupreneur-pro' ) . '</p></div>';
+		echo '<div class="edu-form-group"><label>Category</label><input type="text" name="category" id="kb_category" placeholder="e.g. general, payments">';
+		echo '<p class="edu-field-caption">' . esc_html__( 'Internal grouping for articles (e.g., technical, onboarding).', 'edupreneur-pro' ) . '</p></div>';
+		echo '<div class="edu-form-group"><label>Content</label><textarea name="content" id="kb_content" rows="5" required></textarea>';
+		echo '<p class="edu-field-caption">' . esc_html__( 'The full text of your guide. You can use basic HTML here.', 'edupreneur-pro' ) . '</p></div>';
 		echo '<button type="submit" name="edu_kb_action" value="save" class="edu-btn">Save Article</button></form>';
 
 		echo '<table class="wp-list-table widefat fixed striped"><thead><tr><th>Title</th><th>Category</th><th>Actions</th></tr></thead><tbody>';
@@ -487,11 +494,16 @@ class DashboardModule implements ModuleInterface {
 		wp_nonce_field( 'edu_prod_action' );
 		echo '<h3>Add/Edit Product</h3>';
 		echo '<input type="hidden" name="prod_id" id="prod_id">';
-		echo '<div class="edu-form-group"><label>Title</label><input type="text" name="title" id="prod_title" required></div>';
-		echo '<div class="edu-form-group"><label>Price ($)</label><input type="number" step="0.01" name="price" id="prod_price" value="0.00"></div>';
-		echo '<div class="edu-form-group"><label>File URL</label><input type="text" name="file_url" id="prod_url"></div>';
-		echo '<div class="edu-form-group"><label>Download Limit (0 for unlimited)</label><input type="number" name="download_limit" id="prod_limit" value="0"></div>';
-		echo '<div class="edu-form-group"><label>Expiry Days (0 for no expiry)</label><input type="number" name="expiry_days" id="prod_expiry" value="0"></div>';
+		echo '<div class="edu-form-group"><label>Title</label><input type="text" name="title" id="prod_title" required>';
+		echo '<p class="edu-field-caption">' . esc_html__( 'The name of the digital product as it appears in the store.', 'edupreneur-pro' ) . '</p></div>';
+		echo '<div class="edu-form-group"><label>Price ($)</label><input type="number" step="0.01" name="price" id="prod_price" value="0.00">';
+		echo '<p class="edu-field-caption">' . esc_html__( 'The cost for a single download license.', 'edupreneur-pro' ) . '</p></div>';
+		echo '<div class="edu-form-group"><label>File URL</label><input type="text" name="file_url" id="prod_url">';
+		echo '<p class="edu-field-caption">' . esc_html__( 'The path to the file. This can be a local path or a remote URL.', 'edupreneur-pro' ) . '</p></div>';
+		echo '<div class="edu-form-group"><label>Download Limit (0 for unlimited)</label><input type="number" name="download_limit" id="prod_limit" value="0">';
+		echo '<p class="edu-field-caption">' . esc_html__( 'How many times the user can download the file after purchase.', 'edupreneur-pro' ) . '</p></div>';
+		echo '<div class="edu-form-group"><label>Expiry Days (0 for no expiry)</label><input type="number" name="expiry_days" id="prod_expiry" value="0">';
+		echo '<p class="edu-field-caption">' . esc_html__( 'Number of days the download link remains valid after purchase.', 'edupreneur-pro' ) . '</p></div>';
 		echo '<button type="submit" name="edu_prod_action" value="save" class="edu-btn">Save Product</button></form>';
 
 		echo '<table class="wp-list-table widefat fixed striped"><thead><tr><th>Title</th><th>Price</th><th>Limit</th><th>Actions</th></tr></thead><tbody>';

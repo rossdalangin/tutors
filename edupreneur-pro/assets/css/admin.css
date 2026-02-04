@@ -145,7 +145,8 @@
 
 .edu-form-group { margin-bottom: 15px; }
 .edu-form-group label { display: block; font-weight: 600; margin-bottom: 5px; }
-.edu-form-group input, .edu-form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
+.edu-form-group input, .edu-form-group textarea, .edu-form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
+.edu-field-caption { font-size: 12px; color: #646970; margin: 5px 0 0 0; font-style: italic; line-height: 1.4; }
 
 @media (max-width: 782px) {
     .edu-builder-container { flex-direction: column; }
