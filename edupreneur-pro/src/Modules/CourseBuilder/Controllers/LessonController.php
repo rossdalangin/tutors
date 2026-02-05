@@ -104,6 +104,9 @@ class LessonController extends WP_REST_Controller {
 			'lesson_type' => sanitize_text_field( $request['lesson_type'] ),
 		);
 		$id = $this->repository->create( $data );
+		if ( ! $id ) {
+			return new \WP_Error( 'db_error', 'Could not create lesson', array( 'status' => 500 ) );
+		}
 
 		global $wpdb;
 		if ( isset( $request['quiz_data'] ) && ! empty( $request['quiz_data'] ) ) {
@@ -148,7 +151,12 @@ class LessonController extends WP_REST_Controller {
 	}
 
 	public function update_item( $request ) {
-		$id = $request['id'];
+		$id = intval( $request['id'] );
+		$lesson = $this->repository->find( $id );
+		if ( ! $lesson ) {
+			return new \WP_Error( 'not_found', 'Lesson not found', array( 'status' => 404 ) );
+		}
+
 		$data = array();
 		if ( isset( $request['title'] ) ) $data['title'] = sanitize_text_field( $request['title'] );
 		if ( isset( $request['description'] ) ) $data['content'] = wp_kses_post( $request['description'] );
@@ -156,13 +164,17 @@ class LessonController extends WP_REST_Controller {
 		if ( isset( $request['drip_days'] ) ) $data['drip_days'] = intval( $request['drip_days'] );
 		if ( isset( $request['lesson_type'] ) ) $data['lesson_type'] = sanitize_text_field( $request['lesson_type'] );
 
-		$this->repository->update( $id, $data );
+		if ( ! empty( $data ) ) {
+			$this->repository->update( $id, $data );
+		}
+
+		$display_title = isset( $data['title'] ) ? $data['title'] : $lesson->title;
 
 		global $wpdb;
 		if ( isset( $request['quiz_data'] ) ) {
 			$wpdb->replace( "{$wpdb->prefix}edu_quizzes", array(
 				'lesson_id' => $id,
-				'title'     => 'Quiz for ' . $data['title'],
+				'title'     => 'Quiz for ' . $display_title,
 				'questions' => sanitize_textarea_field( $request['quiz_data'] )
 			) );
 		}
@@ -170,7 +182,7 @@ class LessonController extends WP_REST_Controller {
 		if ( isset( $request['assignment_data'] ) ) {
 			$wpdb->replace( "{$wpdb->prefix}edu_assignments", array(
 				'lesson_id'    => $id,
-				'title'        => 'Assignment for ' . $data['title'],
+				'title'        => 'Assignment for ' . $display_title,
 				'instructions' => sanitize_textarea_field( $request['assignment_data'] )
 			) );
 		}

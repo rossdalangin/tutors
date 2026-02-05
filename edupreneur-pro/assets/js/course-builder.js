@@ -528,7 +528,8 @@
                     self.fetchLessons(moduleId, courseId);
                 },
                 error: (err) => {
-                    alert('Error adding lesson: ' + err.responseJSON.message);
+                    const msg = (err.responseJSON && err.responseJSON.message) ? err.responseJSON.message : 'Unknown server error';
+                    alert('Error adding lesson: ' + msg);
                     $input.prop('disabled', false);
                 }
             });
@@ -600,7 +601,10 @@
                     $('#edu-builder-modal').hide();
                     self.fetchData();
                 },
-                error: (err) => alert('Error saving: ' + err.responseJSON.message)
+                error: (err) => {
+                    const msg = (err.responseJSON && err.responseJSON.message) ? err.responseJSON.message : 'Unknown server error';
+                    alert('Error saving: ' + msg);
+                }
             });
         }
     };

@@ -96,11 +96,14 @@ class ModuleController extends WP_REST_Controller {
 	}
 
 	public function update_item( $request ) {
-		$id = $request['id'];
+		$id = intval( $request['id'] );
 		$data = array();
 		if ( isset( $request['title'] ) ) $data['title'] = sanitize_text_field( $request['title'] );
 
-		$this->repository->update( $id, $data );
+		if ( ! empty( $data ) ) {
+			$this->repository->update( $id, $data );
+		}
+
 		return new WP_REST_Response( array( 'success' => true ), 200 );
 	}
 
