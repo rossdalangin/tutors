@@ -150,6 +150,12 @@
             $(document).on('click', '.edu-edit-module', (e) => self.loadAndOpenModal('module', $(e.currentTarget).closest('.edu-module-box').data('id')));
             $(document).on('click', '.edu-edit-lesson', (e) => self.loadAndOpenModal('lesson', $(e.currentTarget).closest('.edu-lesson-item').data('id')));
 
+            $(document).on('click', '.edu-refresh-course', (e) => {
+                const cid = $(e.currentTarget).data('course-id');
+                self.fetchModules(cid);
+                self.fetchLessons(0, cid);
+            });
+
             // Delete actions
             $(document).on('click', '.edu-delete-course', (e) => self.deleteEntity('course', $(e.currentTarget).closest('.edu-course-container').data('id')));
             $(document).on('click', '.edu-delete-module', (e) => self.deleteEntity('module', $(e.currentTarget).closest('.edu-module-box').data('id')));
@@ -387,6 +393,7 @@
                                 <h3 style="margin:0;">${course.title} <span class="tag" style="font-size:0.6em; vertical-align:middle;">${course.category || 'General'}</span></h3>
                                 <div class="edu-item-actions">
                                     <span style="font-size:0.8em; color:#666; margin-right:10px;">$${parseFloat(course.price).toFixed(2)}</span>
+                                    <span class="edu-refresh-course" data-course-id="${course.id}" title="Refresh Curriculum" style="cursor:pointer; margin-right:5px;">🔄</span>
                                     <span class="edu-edit-course" title="Edit Course">✏️</span>
                                     <span class="edu-delete-course" title="Delete Course">🗑️</span>
                                 </div>
@@ -474,16 +481,20 @@
             const hasOrphans = $orphanList.find('.edu-lesson-item').length > 0;
             const hasModules = $(`#modules-for-${courseId}`).find('.edu-module-box').length > 0;
 
-            // Show orphans if they exist OR if there are no modules at all
+            console.log(`Course ${courseId}: hasOrphans=${hasOrphans}, hasModules=${hasModules}`);
+
+            // Always show the container if orphans exist.
+            // If no orphans, show it only if there are also no modules (to allow adding the first lesson).
             if (hasOrphans || !hasModules) {
-                $orphanList.closest('.edu-orphan-lessons-container').show();
+                $orphanList.closest('.edu-orphan-lessons-container').css('display', 'block');
             } else {
-                $orphanList.closest('.edu-orphan-lessons-container').hide();
+                $orphanList.closest('.edu-orphan-lessons-container').css('display', 'none');
             }
         },
 
         fetchLessons: function(moduleId, courseId) {
             const self = this;
+            console.log(`Fetching lessons for course ${courseId}, module ${moduleId}`);
             $.ajax({
                 url: eduApi.root + 'edupreneur/v1/lessons',
                 method: 'GET',
@@ -493,7 +504,10 @@
                     module_id: moduleId
                 },
                 beforeSend: (xhr) => xhr.setRequestHeader('X-WP-Nonce', eduApi.nonce),
-                success: (lessons) => self.renderLessons(moduleId, lessons, courseId),
+                success: (lessons) => {
+                    console.log(`Received ${lessons.length} lessons for module ${moduleId}`);
+                    self.renderLessons(moduleId, lessons, courseId);
+                },
                 error: (err) => {
                     console.error('Failed to fetch lessons for module ' + moduleId, err);
                 }
@@ -503,9 +517,17 @@
         renderLessons: function(moduleId, lessons, courseId) {
             const isOrphan = parseInt(moduleId) === 0;
             const $container = isOrphan ? $(`#orphan-lessons-for-${courseId}`) : $(`#lessons-for-${moduleId}`);
-            if (!$container.length) return;
+            if (!$container.length) {
+                console.warn(`Lessons container not found for module ${moduleId} in course ${courseId}`);
+                return;
+            }
 
             $container.empty();
+            if (!Array.isArray(lessons)) {
+                console.error(`Expected array of lessons but received:`, lessons);
+                return;
+            }
+
             lessons.forEach(lesson => {
                 let indicators = '';
                 if (lesson.video_url) indicators += '<span title="Video" style="margin-right:5px;">🎥</span>';
