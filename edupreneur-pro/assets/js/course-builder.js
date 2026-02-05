@@ -475,7 +475,9 @@
             if (!$container.length) return;
 
             if (isOrphan) {
-                $container.closest('.edu-orphan-lessons-container').toggle(lessons.length > 0 || $(`#modules-for-${courseId}`).children().length > 0);
+                // Show orphan container if there are lessons OR if there are no modules yet (to allow quick adding)
+                const hasModules = $(`#modules-for-${courseId}`).find('.edu-module-box').length > 0;
+                $container.closest('.edu-orphan-lessons-container').toggle(lessons.length > 0 || !hasModules);
             }
 
             $container.empty();

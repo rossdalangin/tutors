@@ -155,6 +155,15 @@ final class EdupreneurPro {
 			return '<p>' . esc_html__( 'Please log in to access this lesson.', 'edupreneur-pro' ) . '</p>';
 		}
 
+		// Check enrollment for students (admins can always see it)
+		if ( ! current_user_can( 'manage_edu_lessons' ) ) {
+			$student_id = get_current_user_id();
+			$is_enrolled = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}edu_enrollments WHERE student_id = %d AND course_id = %d AND status = 'active'", $student_id, $lesson->course_id ) );
+			if ( ! $is_enrolled ) {
+				return '<div class="edu-card edu-warning"><h3>' . esc_html__( 'Enrollment Required', 'edupreneur-pro' ) . '</h3><p>' . esc_html__( 'You must be enrolled in this course to view this lesson.', 'edupreneur-pro' ) . '</p><a href="' . add_query_arg( 'edu_course_id', $lesson->course_id, get_permalink() ) . '" class="edu-btn">' . esc_html__( 'View Enrollment Options', 'edupreneur-pro' ) . '</a></div>';
+			}
+		}
+
 		// Progress Service Check (Drip)
 		$progress = new \EdupreneurPro\Modules\CourseBuilder\Services\ProgressService();
 		if ( ! $progress->can_access_lesson( get_current_user_id(), $lesson_id ) ) {
@@ -271,7 +280,7 @@ final class EdupreneurPro {
 		echo '<h2>' . __( 'Course Curriculum', 'edupreneur-pro' ) . '</h2>';
 
 		// Orphan lessons
-		$orphan_lessons = $wpdb->get_results( $wpdb->prepare( "SELECT title FROM {$wpdb->prefix}edu_lessons WHERE course_id = %d AND module_id = 0 ORDER BY order_index ASC", $course_id ) );
+		$orphan_lessons = $wpdb->get_results( $wpdb->prepare( "SELECT title FROM {$wpdb->prefix}edu_lessons WHERE course_id = %d AND (module_id = 0 OR module_id IS NULL) ORDER BY order_index ASC", $course_id ) );
 		if ( ! empty( $orphan_lessons ) ) {
 			echo '<div class="edu-card" style="margin-bottom:10px;"><h3>' . __( 'Introductory Lessons', 'edupreneur-pro' ) . '</h3>';
 			echo '<ul>';
@@ -359,7 +368,7 @@ final class EdupreneurPro {
 				echo '<p class="edu-caption">' . sprintf( __( '%d of %d lessons completed', 'edupreneur-pro' ), $completed_lessons, $total_lessons ) . '</p>';
 
 				// Display lessons without a module first
-				$orphan_lessons = $wpdb->get_results( $wpdb->prepare( "SELECT id, title FROM {$wpdb->prefix}edu_lessons WHERE course_id = %d AND module_id = 0 ORDER BY order_index ASC", $course->id ) );
+				$orphan_lessons = $wpdb->get_results( $wpdb->prepare( "SELECT id, title FROM {$wpdb->prefix}edu_lessons WHERE course_id = %d AND (module_id = 0 OR module_id IS NULL) ORDER BY order_index ASC", $course->id ) );
 				if ( ! empty( $orphan_lessons ) ) {
 					echo '<div class="edu-module-summary" style="margin-top:15px; border-top:1px solid #f0f0f0; padding-top:10px;">';
 					echo '<strong style="font-size: 0.85em; color: #888; text-transform:uppercase;">' . esc_html__( 'Introduction', 'edupreneur-pro' ) . '</strong>';
