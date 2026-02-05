@@ -127,6 +127,24 @@
                 self.openModal('lesson', 0, mid, cid);
             });
 
+            // Quick Add Lesson
+            $(document).on('keypress', '.edu-quick-add-input', (e) => {
+                if (e.which === 13) {
+                    const $input = $(e.currentTarget);
+                    const title = $input.val();
+                    const mid = $input.data('module-id');
+                    const cid = $input.data('course-id');
+                    if (title) self.quickAddLesson(title, mid, cid, $input);
+                }
+            });
+
+            // Expand/Collapse Module
+            $(document).on('click', '.edu-module-toggle', (e) => {
+                const $box = $(e.currentTarget).closest('.edu-module-box');
+                $box.toggleClass('is-collapsed');
+                $(e.currentTarget).text($box.hasClass('is-collapsed') ? '➕' : '➖');
+            });
+
             // Edit actions
             $(document).on('click', '.edu-edit-course', (e) => self.loadAndOpenModal('course', $(e.currentTarget).closest('.edu-course-container').data('id')));
             $(document).on('click', '.edu-edit-module', (e) => self.loadAndOpenModal('module', $(e.currentTarget).closest('.edu-module-box').data('id')));
@@ -380,7 +398,10 @@
                             <div class="edu-lessons-list" id="orphan-lessons-for-${course.id}" data-id="0">
                                 <!-- Orphan lessons go here -->
                             </div>
-                            <button class="edu-btn-link edu-add-lesson" data-module-id="0" data-course-id="${course.id}">+ Add Direct Lesson</button>
+                            <div class="edu-quick-add-bar">
+                                <input type="text" class="edu-quick-add-input" placeholder="Quick add lesson title..." data-module-id="0" data-course-id="${course.id}">
+                                <button class="edu-btn-link edu-add-lesson" data-module-id="0" data-course-id="${course.id}">+ Full Editor</button>
+                            </div>
                         </div>
                     </div>
                 `);
@@ -411,6 +432,7 @@
                 const $moduleBox = $(`
                     <div class="edu-module-box" data-id="${module.id}">
                         <div class="edu-module-header">
+                            <div class="edu-module-toggle" style="cursor:pointer; margin-right:10px;">➖</div>
                             <div class="edu-drag-handle-mini">⠿</div>
                             <div style="flex-grow:1;">
                                 <h4 style="margin:0;">${module.title}</h4>
@@ -419,10 +441,15 @@
                                     <span class="edu-delete-module" title="Delete Module">🗑️</span>
                                 </div>
                             </div>
-                            <button class="edu-btn-link edu-add-lesson" data-module-id="${module.id}">+ Add Lesson</button>
                         </div>
-                        <div class="edu-lessons-list" id="lessons-for-${module.id}">
-                            <!-- Lessons go here -->
+                        <div class="edu-module-content">
+                            <div class="edu-lessons-list" id="lessons-for-${module.id}">
+                                <!-- Lessons go here -->
+                            </div>
+                            <div class="edu-quick-add-bar">
+                                <input type="text" class="edu-quick-add-input" placeholder="Quick add lesson title..." data-module-id="${module.id}" data-course-id="${courseId}">
+                                <button class="edu-btn-link edu-add-lesson" data-module-id="${module.id}">+ Full Editor</button>
+                            </div>
                         </div>
                     </div>
                 `);
@@ -448,11 +475,18 @@
             if (!$container.length) return;
 
             if (isOrphan) {
-                $container.closest('.edu-orphan-lessons-container').toggle(lessons.length > 0);
+                $container.closest('.edu-orphan-lessons-container').toggle(lessons.length > 0 || $(`#modules-for-${courseId}`).children().length > 0);
             }
 
             $container.empty();
             lessons.forEach(lesson => {
+                let indicators = '';
+                if (lesson.video_url) indicators += '<span title="Video" style="margin-right:5px;">🎥</span>';
+                if (lesson.lesson_type === 'quiz') indicators += '<span title="Quiz" style="margin-right:5px;">❓</span>';
+                if (lesson.lesson_type === 'assignment') indicators += '<span title="Assignment" style="margin-right:5px;">📝</span>';
+
+                const previewUrl = window.location.origin + window.location.pathname.replace('wp-admin/admin.php', '') + '?edu_lesson=' + lesson.id;
+
                 $container.append(`
                     <div class="edu-lesson-item" data-id="${lesson.id}">
                         <div class="edu-drag-handle-mini">⠿</div>
@@ -460,15 +494,44 @@
                         <div style="flex-grow:1;">
                             <span class="edu-lesson-title">${lesson.title}</span>
                             <div class="edu-item-actions-mini">
+                                <a href="${previewUrl}" target="_blank" title="Preview Lesson" style="text-decoration:none; filter:none; opacity:0.6;">👁️</a>
                                 <span class="edu-edit-lesson" title="Edit Lesson">✏️</span>
                                 <span class="edu-delete-lesson" title="Delete Lesson">🗑️</span>
                             </div>
                         </div>
+                        <div class="edu-lesson-indicators" style="font-size:12px; opacity:0.7;">${indicators}</div>
                         <span class="edu-lesson-type tag">${lesson.lesson_type || 'video'}</span>
                     </div>
                 `);
             });
             this.initSortable();
+        },
+
+        quickAddLesson: function(title, moduleId, courseId, $input) {
+            const self = this;
+            const data = {
+                title: title,
+                module_id: moduleId,
+                course_id: courseId,
+                lesson_type: 'video',
+                description: ''
+            };
+
+            $input.prop('disabled', true);
+            $.ajax({
+                url: eduApi.root + 'edupreneur/v1/lessons',
+                method: 'POST',
+                beforeSend: (xhr) => xhr.setRequestHeader('X-WP-Nonce', eduApi.nonce),
+                data: data,
+                success: () => {
+                    $input.val('').prop('disabled', false).focus();
+                    self.fetchLessons(moduleId, courseId);
+                },
+                error: (err) => {
+                    alert('Error adding lesson: ' + err.responseJSON.message);
+                    $input.prop('disabled', false);
+                }
+            });
         },
 
         saveEntity: function() {
