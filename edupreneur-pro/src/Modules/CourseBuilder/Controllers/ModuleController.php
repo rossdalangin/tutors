@@ -79,7 +79,8 @@ class ModuleController extends WP_REST_Controller {
 
 	public function get_items( $request ) {
 		$course_id = intval( $request['course_id'] );
-		return new WP_REST_Response( $this->repository->get_by_course( $course_id ), 200 );
+		$modules = $this->repository->get_by_course( $course_id );
+		return new WP_REST_Response( is_array( $modules ) ? $modules : array(), 200 );
 	}
 
 	public function get_item( $request ) {

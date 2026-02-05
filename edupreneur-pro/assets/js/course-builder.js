@@ -362,7 +362,11 @@
                 url: eduApi.root + 'edupreneur/v1/courses',
                 method: 'GET',
                 beforeSend: (xhr) => xhr.setRequestHeader('X-WP-Nonce', eduApi.nonce),
-                success: (courses) => self.renderWorkspace(courses)
+                success: (courses) => self.renderWorkspace(courses),
+                error: (err) => {
+                    const msg = (err.responseJSON && err.responseJSON.message) ? err.responseJSON.message : 'Failed to fetch courses.';
+                    alert('Error: ' + msg);
+                }
             });
         },
 
@@ -417,7 +421,10 @@
                 url: eduApi.root + 'edupreneur/v1/modules?course_id=' + courseId,
                 method: 'GET',
                 beforeSend: (xhr) => xhr.setRequestHeader('X-WP-Nonce', eduApi.nonce),
-                success: (modules) => self.renderModules(courseId, modules)
+                success: (modules) => self.renderModules(courseId, modules),
+                error: (err) => {
+                    console.error('Failed to fetch modules for course ' + courseId, err);
+                }
             });
         },
 
@@ -456,7 +463,15 @@
                 $container.append($moduleBox);
                 this.fetchLessons(module.id, courseId);
             });
+            this.updateOrphanVisibility(courseId);
             setTimeout(() => this.initSortable(), 500);
+        },
+
+        updateOrphanVisibility: function(courseId) {
+            const $orphanList = $(`#orphan-lessons-for-${courseId}`);
+            const hasOrphans = $orphanList.children('.edu-lesson-item').length > 0;
+            const hasModules = $(`#modules-for-${courseId}`).find('.edu-module-box').length > 0;
+            $orphanList.closest('.edu-orphan-lessons-container').toggle(hasOrphans || !hasModules);
         },
 
         fetchLessons: function(moduleId, courseId) {
@@ -465,7 +480,10 @@
                 url: eduApi.root + 'edupreneur/v1/lessons?course_id=' + courseId + '&module_id=' + moduleId,
                 method: 'GET',
                 beforeSend: (xhr) => xhr.setRequestHeader('X-WP-Nonce', eduApi.nonce),
-                success: (lessons) => self.renderLessons(moduleId, lessons, courseId)
+                success: (lessons) => self.renderLessons(moduleId, lessons, courseId),
+                error: (err) => {
+                    console.error('Failed to fetch lessons for module ' + moduleId, err);
+                }
             });
         },
 
@@ -474,12 +492,6 @@
             const $container = isOrphan ? $(`#orphan-lessons-for-${courseId}`) : $(`#lessons-for-${moduleId}`);
             if (!$container.length) return;
 
-            if (isOrphan) {
-                // Show orphan container if there are lessons OR if there are no modules yet (to allow quick adding)
-                const hasModules = $(`#modules-for-${courseId}`).find('.edu-module-box').length > 0;
-                $container.closest('.edu-orphan-lessons-container').toggle(lessons.length > 0 || !hasModules);
-            }
-
             $container.empty();
             lessons.forEach(lesson => {
                 let indicators = '';
@@ -487,7 +499,7 @@
                 if (lesson.lesson_type === 'quiz') indicators += '<span title="Quiz" style="margin-right:5px;">❓</span>';
                 if (lesson.lesson_type === 'assignment') indicators += '<span title="Assignment" style="margin-right:5px;">📝</span>';
 
-                const previewUrl = window.location.origin + window.location.pathname.replace('wp-admin/admin.php', '') + '?edu_lesson=' + lesson.id;
+                const previewUrl = eduApi.siteUrl + '?edu_lesson=' + lesson.id;
 
                 $container.append(`
                     <div class="edu-lesson-item" data-id="${lesson.id}">
@@ -506,6 +518,11 @@
                     </div>
                 `);
             });
+
+            if (isOrphan) {
+                this.updateOrphanVisibility(courseId);
+            }
+
             this.initSortable();
         },
 

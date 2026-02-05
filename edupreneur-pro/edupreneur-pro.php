@@ -49,7 +49,7 @@ final class EdupreneurPro {
 		add_action( 'init', array( $this, 'track_affiliate_referral' ) );
 		add_action( 'init', array( $this, 'handle_lesson_completion' ) );
 		add_action( 'init', array( $this, 'handle_course_redirects' ) );
-		add_action( 'admin_init', array( $this, 'ensure_admin_capabilities' ) );
+		add_action( 'init', array( $this, 'ensure_admin_capabilities' ) );
 		add_shortcode( 'edu_student_dashboard', array( $this, 'render_student_dashboard' ) );
 		add_filter( 'the_content', array( $this, 'handle_lesson_display' ) );
 		register_activation_hook( __FILE__, array( $this, 'activate' ) );
@@ -59,7 +59,7 @@ final class EdupreneurPro {
 	 * Ensure roles have necessary capabilities.
 	 */
 	public function ensure_admin_capabilities() {
-		if ( is_admin() && current_user_can( 'read' ) ) {
+		if ( current_user_can( 'read' ) ) {
 			\EdupreneurPro\Core\Auth\Roles::ensure_all_caps();
 		}
 	}
@@ -448,8 +448,9 @@ final class EdupreneurPro {
 			wp_enqueue_style( 'edu-admin-css', plugin_dir_url( __FILE__ ) . 'assets/css/admin.css', array(), EDUPRENEUR_PRO_VERSION );
 
 			wp_localize_script( 'jquery', 'eduApi', array(
-				'root'  => esc_url_raw( rest_url() ),
-				'nonce' => wp_create_nonce( 'wp_rest' ),
+				'root'    => esc_url_raw( rest_url() ),
+				'nonce'   => wp_create_nonce( 'wp_rest' ),
+				'siteUrl' => esc_url( home_url( '/' ) ),
 			) );
 
 			if ( strpos( $hook, 'page_edu-courses' ) !== false ) {

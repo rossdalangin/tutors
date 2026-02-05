@@ -87,10 +87,12 @@ class LessonController extends WP_REST_Controller {
 
 		if ( $request->has_param( 'module_id' ) ) {
 			$module_id = intval( $request->get_param( 'module_id' ) );
-			return new WP_REST_Response( $this->repository->get_by_module( $course_id, $module_id ), 200 );
+			$lessons = $this->repository->get_by_module( $course_id, $module_id );
+		} else {
+			$lessons = $this->repository->get_by_course( $course_id );
 		}
 
-		return new WP_REST_Response( $this->repository->get_by_course( $course_id ), 200 );
+		return new WP_REST_Response( is_array( $lessons ) ? $lessons : array(), 200 );
 	}
 
 	public function create_item( $request ) {
