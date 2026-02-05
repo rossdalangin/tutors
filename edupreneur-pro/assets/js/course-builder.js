@@ -418,8 +418,9 @@
         fetchModules: function(courseId) {
             const self = this;
             $.ajax({
-                url: eduApi.root + 'edupreneur/v1/modules?course_id=' + courseId,
+                url: eduApi.root + 'edupreneur/v1/modules',
                 method: 'GET',
+                data: { course_id: courseId },
                 beforeSend: (xhr) => xhr.setRequestHeader('X-WP-Nonce', eduApi.nonce),
                 success: (modules) => self.renderModules(courseId, modules),
                 error: (err) => {
@@ -431,8 +432,9 @@
         renderModules: function(courseId, modules) {
             const $container = $(`#modules-for-${courseId}`);
             $container.empty();
-            if (!modules.length) {
+            if (!modules || !modules.length) {
                 $container.append('<p class="edu-empty-msg">No modules yet. Modules group your lessons together.</p>');
+                this.updateOrphanVisibility(courseId);
                 return;
             }
             modules.forEach(module => {
@@ -477,8 +479,12 @@
         fetchLessons: function(moduleId, courseId) {
             const self = this;
             $.ajax({
-                url: eduApi.root + 'edupreneur/v1/lessons?course_id=' + courseId + '&module_id=' + moduleId,
+                url: eduApi.root + 'edupreneur/v1/lessons',
                 method: 'GET',
+                data: {
+                    course_id: courseId,
+                    module_id: moduleId
+                },
                 beforeSend: (xhr) => xhr.setRequestHeader('X-WP-Nonce', eduApi.nonce),
                 success: (lessons) => self.renderLessons(moduleId, lessons, courseId),
                 error: (err) => {

@@ -28,6 +28,37 @@ class CourseAdmin {
 			echo '<div class="edu-card"><h3>' . esc_html__( 'Monetization & Sales', 'edupreneur-pro' ) . '</h3>';
 			echo '<p>' . esc_html__( 'Track your revenue from Stripe, PayPal, and GCash. Manage your affiliate partners and optimize your sales funnel from a single view.', 'edupreneur-pro' ) . '</p>';
 			echo '<a href="' . admin_url( 'admin.php?page=edu-dashboard' ) . '" class="edu-btn">' . esc_html__( 'View Sales Reports', 'edupreneur-pro' ) . '</a></div>';
+
+			echo '<div class="edu-card"><h3>' . esc_html__( 'Quick Start Tools', 'edupreneur-pro' ) . '</h3>';
+			echo '<p>' . esc_html__( 'Need inspiration? Populate your business with realistic sample data to see how the system handles courses, students, and payments.', 'edupreneur-pro' ) . '</p>';
+			echo '<button id="edu-load-samples" class="edu-btn edu-btn-secondary">' . esc_html__( 'Load Sample Data', 'edupreneur-pro' ) . '</button>';
+			echo '<button id="edu-reset-data" class="edu-btn-link" style="color:#d63638; margin-left:10px;">' . esc_html__( 'Reset All Data', 'edupreneur-pro' ) . '</button>';
+			echo '<div id="sample-status" style="margin-top:10px;"></div></div>';
+
+			echo '<script>
+				jQuery(document).on("click", "#edu-load-samples", function() {
+					const btn = jQuery(this);
+					const status = jQuery("#sample-status");
+					btn.prop("disabled", true).text("Loading...");
+					jQuery.post(eduApi.root + "edupreneur/v1/debug/sample-data", { _wpnonce: eduApi.nonce }, function(res) {
+						status.html("<p style=\'color:green; font-weight:bold;\'>" + res.message + "</p>");
+						btn.text("Data Loaded").prop("disabled", true);
+						setTimeout(() => location.reload(), 1500);
+					}).fail(function(err) {
+						status.html("<p style=\'color:red;\'>Error: " + (err.responseJSON ? err.responseJSON.message : "Request failed") + "</p>");
+						btn.prop("disabled", false).text("Load Sample Data");
+					});
+				});
+				jQuery(document).on("click", "#edu-reset-data", function() {
+					if(!confirm("Are you sure? This will delete all courses, lessons, and student progress!")) return;
+					const status = jQuery("#sample-status");
+					jQuery.post(eduApi.root + "edupreneur/v1/debug/reset", { _wpnonce: eduApi.nonce }, function(res) {
+						status.html("<p style=\'color:orange;\'>" + res.message + "</p>");
+						setTimeout(() => location.reload(), 1000);
+					});
+				});
+			</script>';
+
 			echo '</div></div>';
 		} elseif ( current_user_can( 'view_edu_affiliate_dashboard' ) ) {
 			$aff_module = $container->get( 'module_affiliate' );
