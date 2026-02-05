@@ -398,13 +398,12 @@
                             <div class="edu-loading-mini">Loading modules...</div>
                         </div>
                         <div class="edu-orphan-lessons-container" style="margin-top:15px; border-top:1px dashed #ddd; padding-top:15px;">
-                            <h4 style="font-size:12px; text-transform:uppercase; color:#888;">Module-less Lessons</h4>
+                            <h4 style="font-size:12px; text-transform:uppercase; color:#888;">Lessons</h4>
                             <div class="edu-lessons-list" id="orphan-lessons-for-${course.id}" data-id="0">
                                 <!-- Orphan lessons go here -->
                             </div>
-                            <div class="edu-quick-add-bar">
-                                <input type="text" class="edu-quick-add-input" placeholder="Quick add lesson title..." data-module-id="0" data-course-id="${course.id}">
-                                <button class="edu-btn-link edu-add-lesson" data-module-id="0" data-course-id="${course.id}">+ Full Editor</button>
+                            <div style="margin-top:10px;">
+                                <button class="edu-btn edu-btn-small edu-add-lesson" data-module-id="0" data-course-id="${course.id}">+ Add a Lesson</button>
                             </div>
                         </div>
                     </div>
@@ -455,9 +454,8 @@
                             <div class="edu-lessons-list" id="lessons-for-${module.id}">
                                 <!-- Lessons go here -->
                             </div>
-                            <div class="edu-quick-add-bar">
-                                <input type="text" class="edu-quick-add-input" placeholder="Quick add lesson title..." data-module-id="${module.id}" data-course-id="${courseId}">
-                                <button class="edu-btn-link edu-add-lesson" data-module-id="${module.id}">+ Full Editor</button>
+                            <div style="margin-top:10px;">
+                                <button class="edu-btn edu-btn-small edu-add-lesson" data-module-id="${module.id}">+ Add a Lesson</button>
                             </div>
                         </div>
                     </div>

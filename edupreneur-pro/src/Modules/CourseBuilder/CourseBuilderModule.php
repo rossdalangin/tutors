@@ -41,6 +41,9 @@ class CourseBuilderModule implements ModuleInterface {
 
 		$lesson_controller = new LessonController();
 		$lesson_controller->register_routes();
+
+		$system_controller = new \EdupreneurPro\Modules\CourseBuilder\Controllers\SystemController();
+		$system_controller->register_routes();
 	}
 
 	public function get_id() {
