@@ -35,14 +35,12 @@ class SystemController extends WP_REST_Controller {
 	}
 
 	public function load_sample_data() {
-		$service = new SystemService();
-		$service->load_sample_data();
+		SystemService::add_sample_data();
 		return new WP_REST_Response( array( 'message' => 'Sample data loaded successfully.' ), 200 );
 	}
 
 	public function reset_data() {
-		$service = new SystemService();
-		$service->reset_all_data();
+		SystemService::clear_database();
 		return new WP_REST_Response( array( 'message' => 'All course data has been reset.' ), 200 );
 	}
 }

@@ -361,6 +361,7 @@
             $.ajax({
                 url: eduApi.root + 'edupreneur/v1/courses',
                 method: 'GET',
+                cache: false,
                 beforeSend: (xhr) => xhr.setRequestHeader('X-WP-Nonce', eduApi.nonce),
                 success: (courses) => self.renderWorkspace(courses),
                 error: (err) => {
@@ -419,6 +420,7 @@
             $.ajax({
                 url: eduApi.root + 'edupreneur/v1/modules',
                 method: 'GET',
+                cache: false,
                 data: { course_id: courseId },
                 beforeSend: (xhr) => xhr.setRequestHeader('X-WP-Nonce', eduApi.nonce),
                 success: (modules) => self.renderModules(courseId, modules),
@@ -469,9 +471,15 @@
 
         updateOrphanVisibility: function(courseId) {
             const $orphanList = $(`#orphan-lessons-for-${courseId}`);
-            const hasOrphans = $orphanList.children('.edu-lesson-item').length > 0;
+            const hasOrphans = $orphanList.find('.edu-lesson-item').length > 0;
             const hasModules = $(`#modules-for-${courseId}`).find('.edu-module-box').length > 0;
-            $orphanList.closest('.edu-orphan-lessons-container').toggle(hasOrphans || !hasModules);
+
+            // Show orphans if they exist OR if there are no modules at all
+            if (hasOrphans || !hasModules) {
+                $orphanList.closest('.edu-orphan-lessons-container').show();
+            } else {
+                $orphanList.closest('.edu-orphan-lessons-container').hide();
+            }
         },
 
         fetchLessons: function(moduleId, courseId) {
@@ -479,6 +487,7 @@
             $.ajax({
                 url: eduApi.root + 'edupreneur/v1/lessons',
                 method: 'GET',
+                cache: false,
                 data: {
                     course_id: courseId,
                     module_id: moduleId
@@ -579,7 +588,11 @@
             if (type === 'lesson') {
                 if (!id || id == 0) {
                     data.module_id = parentId;
-                    data.course_id = $('#course-id').val() || $(`.edu-module-box[data-id="${parentId}"]`).closest('.edu-course-container').data('id');
+                    let cid = $('#course-id').val();
+                    if (!cid || cid == 0) {
+                        cid = $(`.edu-module-box[data-id="${parentId}"]`).closest('.edu-course-container').data('id');
+                    }
+                    data.course_id = cid;
                 }
                 data.lesson_type = $('#lesson-type').val();
                 data.video_url = $('#lesson-video').val();

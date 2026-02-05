@@ -84,9 +84,10 @@ class LessonController extends WP_REST_Controller {
 
 	public function get_items( $request ) {
 		$course_id = intval( $request->get_param( 'course_id' ) );
+		$module_id_param = $request->get_param( 'module_id' );
 
-		if ( $request->has_param( 'module_id' ) ) {
-			$module_id = intval( $request->get_param( 'module_id' ) );
+		if ( null !== $module_id_param ) {
+			$module_id = intval( $module_id_param );
 			$lessons = $this->repository->get_by_module( $course_id, $module_id );
 		} else {
 			$lessons = $this->repository->get_by_course( $course_id );
