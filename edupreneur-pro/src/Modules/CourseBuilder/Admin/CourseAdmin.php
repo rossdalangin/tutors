@@ -87,36 +87,6 @@ class CourseAdmin {
 
 		echo '<div id="edu-course-builder-root" class="edu-card">';
 		echo '<p>' . esc_html__( 'Building your curriculum interface...', 'edupreneur-pro' ) . '</p>';
-		echo '</div>';
-
-		echo '<div class="edu-card" style="margin-top:40px; border-top: 3px solid #eee;">';
-		echo '<h3>' . esc_html__( 'System Diagnostics', 'edupreneur-pro' ) . '</h3>';
-		echo '<p>' . esc_html__( 'If your lessons are not appearing in the builder, use the tool below to verify if they exist in the database.', 'edupreneur-pro' ) . '</p>';
-		echo '<button id="edu-diagnostic-btn" class="edu-btn edu-btn-secondary">' . esc_html__( 'Scan Database for Lessons', 'edupreneur-pro' ) . '</button>';
-		echo '<div id="edu-diagnostic-results" style="margin-top:20px;"></div>';
-		echo '</div>';
-
-		echo '<script>
-			jQuery(document).on("click", "#edu-diagnostic-btn", function() {
-				const results = jQuery("#edu-diagnostic-results");
-				results.html("<p>Scanning...</p>");
-				jQuery.get(eduApi.root + "edupreneur/v1/lessons/diagnostic", { _wpnonce: eduApi.nonce }, function(res) {
-					if(!res.length) {
-						results.html("<p>No lessons found in database.</p>");
-						return;
-					}
-					let html = "<table class=\'wp-list-table widefat fixed striped\'><thead><tr><th>ID</th><th>Title</th><th>Course ID</th><th>Module ID</th></tr></thead><tbody>";
-					res.forEach(l => {
-						html += "<tr><td>"+l.id+"</td><td>"+l.title+"</td><td>"+l.course_id+"</td><td>"+l.module_id+"</td></tr>";
-					});
-					html += "</tbody></table>";
-					results.html(html);
-				}).fail(function() {
-					results.html("<p style=\'color:red;\'>Diagnostic failed. Check permissions.</p>");
-				});
-			});
-		</script>';
-
-		echo '</div>';
+		echo '</div></div>';
 	}
 }

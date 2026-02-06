@@ -16,14 +16,6 @@ class LessonController extends WP_REST_Controller {
 	}
 
 	public function register_routes() {
-		register_rest_route( $this->namespace, '/' . $this->rest_base . '/diagnostic', array(
-			array(
-				'methods'             => WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'get_diagnostic_items' ),
-				'permission_callback' => function() { return current_user_can( 'manage_edu_lessons' ); },
-			),
-		) );
-
 		register_rest_route( $this->namespace, '/' . $this->rest_base, array(
 			array(
 				'methods'             => WP_REST_Server::READABLE,
@@ -217,11 +209,5 @@ class LessonController extends WP_REST_Controller {
 		$id = $request['id'];
 		$this->repository->delete( $id );
 		return new WP_REST_Response( array( 'success' => true ), 200 );
-	}
-
-	public function get_diagnostic_items() {
-		global $wpdb;
-		$lessons = $wpdb->get_results( "SELECT id, title, course_id, module_id FROM {$wpdb->prefix}edu_lessons" );
-		return new WP_REST_Response( $lessons, 200 );
 	}
 }
