@@ -390,7 +390,8 @@ class DashboardModule implements ModuleInterface {
 		} else {
 			foreach ( $items as $item ) {
 				echo "<tr><td>" . esc_html( $item->name ) . "</td><td>" . esc_html( $item->slug ) . "</td><td>";
-				echo "<button class='edu-btn' onclick='document.getElementById(\"cat_id\").value=\"{$item->id}\";document.getElementById(\"cat_name\").value=\"".esc_js($item->name)."\";document.getElementById(\"cat_desc\").value=\"".esc_js($item->description)."\";'>Edit</button> ";
+				$json_data = esc_attr( json_encode( $item ) );
+				echo "<button type='button' class='edu-btn' onclick='eduEditCategory({$json_data})'>Edit</button> ";
 				echo "<form method='post' style='display:inline;'>";
 				wp_nonce_field( 'edu_cat_action' );
 				echo "<input type='hidden' name='cat_id' value='{$item->id}'>";
@@ -433,7 +434,8 @@ class DashboardModule implements ModuleInterface {
 		echo '<table class="wp-list-table widefat fixed striped"><thead><tr><th>Title</th><th>Category</th><th>Actions</th></tr></thead><tbody>';
 		foreach ( $items as $item ) {
 			echo "<tr><td>" . esc_html( $item->title ) . "</td><td>" . esc_html( $item->category ) . "</td><td>";
-			echo "<button class='edu-btn' onclick='document.getElementById(\"kb_id\").value=\"{$item->id}\";document.getElementById(\"kb_title\").value=\"".esc_js($item->title)."\";document.getElementById(\"kb_category\").value=\"".esc_js($item->category)."\";document.getElementById(\"kb_content\").value=\"".esc_js($item->content)."\";'>Edit</button> ";
+			$json_data = esc_attr( json_encode( $item ) );
+			echo "<button type='button' class='edu-btn' onclick='eduEditKB({$json_data})'>Edit</button> ";
 			echo "<form method='post' style='display:inline;'>";
 			wp_nonce_field( 'edu_kb_action' );
 			echo "<input type='hidden' name='kb_id' value='{$item->id}'>";
@@ -512,7 +514,8 @@ class DashboardModule implements ModuleInterface {
 		} else {
 			foreach ( $items as $item ) {
 				echo "<tr><td>" . esc_html( $item->title ) . "</td><td>\${$item->price}</td><td>" . ( $item->download_limit ?: 'Unlimited' ) . "</td><td>";
-				echo "<button class='edu-btn' onclick='document.getElementById(\"prod_id\").value=\"{$item->id}\";document.getElementById(\"prod_title\").value=\"".esc_js($item->title)."\";document.getElementById(\"prod_price\").value=\"{$item->price}\";document.getElementById(\"prod_url\").value=\"".esc_js($item->file_url)."\";document.getElementById(\"prod_limit\").value=\"{$item->download_limit}\";document.getElementById(\"prod_expiry\").value=\"{$item->expiry_days}\";'>Edit</button> ";
+				$json_data = esc_attr( json_encode( $item ) );
+				echo "<button type='button' class='edu-btn' onclick='eduEditProduct({$json_data})'>Edit</button> ";
 				echo "<form method='post' style='display:inline;'>";
 				wp_nonce_field( 'edu_prod_action' );
 				echo "<input type='hidden' name='prod_id' value='{$item->id}'>";

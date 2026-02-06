@@ -78,7 +78,8 @@ class AffiliateModule implements ModuleInterface {
 		echo '<table class="wp-list-table widefat fixed striped"><thead><tr><th>Title</th><th>Type</th><th>Actions</th></tr></thead><tbody>';
 		foreach ( $items as $item ) {
 			echo "<tr><td>" . esc_html( $item->title ) . "</td><td>" . esc_html( $item->asset_type ) . "</td><td>";
-			echo "<button class='edu-btn' onclick='document.getElementById(\"asset_id\").value=\"{$item->id}\";document.getElementById(\"asset_title\").value=\"".esc_js($item->title)."\";document.getElementById(\"asset_type\").value=\"".esc_js($item->asset_type)."\";document.getElementById(\"asset_content\").value=\"".esc_js($item->content)."\";'>Edit</button> ";
+			$json_data = esc_attr( json_encode( $item ) );
+			echo "<button type='button' class='edu-btn' onclick='eduEditAsset({$json_data})'>Edit</button> ";
 			echo "<form method='post' style='display:inline;'>";
 			wp_nonce_field( 'edu_asset_action' );
 			echo "<input type='hidden' name='asset_id' value='{$item->id}'>";

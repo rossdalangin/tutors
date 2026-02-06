@@ -446,6 +446,7 @@ final class EdupreneurPro {
 	public function enqueue_admin_assets( $hook ) {
 		if ( strpos( $hook, 'edu' ) !== false || strpos( $hook, 'edupreneur' ) !== false ) {
 			wp_enqueue_style( 'edu-admin-css', plugin_dir_url( __FILE__ ) . 'assets/css/admin.css', array(), EDUPRENEUR_PRO_VERSION );
+			wp_enqueue_script( 'edu-admin-helpers', plugin_dir_url( __FILE__ ) . 'assets/js/admin-helpers.js', array( 'jquery' ), EDUPRENEUR_PRO_VERSION, true );
 
 			$courses = array();
 			if ( strpos( $hook, 'page_edu-courses' ) !== false ) {
