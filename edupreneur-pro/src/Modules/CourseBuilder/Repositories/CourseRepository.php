@@ -8,7 +8,15 @@ class CourseRepository {
 	}
 	public function all() {
 		global $wpdb;
-		return $wpdb->get_results( "SELECT * FROM {$this->table} ORDER BY created_at DESC" );
+		$courses = $wpdb->get_results( "SELECT * FROM {$this->table} ORDER BY created_at DESC" );
+		foreach ( $courses as $course ) {
+			$course->modules = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}edu_modules WHERE course_id = %d ORDER BY order_index ASC", $course->id ) );
+			foreach ( $course->modules as $module ) {
+				$module->lessons = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}edu_lessons WHERE module_id = %d ORDER BY order_index ASC", $module->id ) );
+			}
+			$course->orphan_lessons = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}edu_lessons WHERE course_id = %d AND (module_id = 0 OR module_id IS NULL) ORDER BY order_index ASC", $course->id ) );
+		}
+		return $courses;
 	}
 
 	public function find( $id ) {

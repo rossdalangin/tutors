@@ -8,7 +8,13 @@
 
             this.render();
             this.bindEvents();
-            this.fetchData();
+
+            // Use pre-localized data if available for instant display
+            if (window.eduApi && typeof window.eduApi.courses !== 'undefined') {
+                this.renderWorkspace(window.eduApi.courses);
+            } else {
+                this.fetchData();
+            }
         },
 
         render: function() {
@@ -353,7 +359,7 @@
                 success: (courses) => self.renderWorkspace(courses),
                 error: (err) => {
                     const msg = (err.responseJSON && err.responseJSON.message) ? err.responseJSON.message : 'Failed to fetch courses.';
-                    alert('Error: ' + msg);
+                    $('#edu-courses-list').html(`<div class="notice notice-error"><p>Error: ${msg}</p></div>`);
                 }
             });
         },
@@ -382,14 +388,10 @@
                                 <button class="edu-btn edu-btn-small edu-add-module" data-course-id="${course.id}">+ Add Module</button>
                             </div>
                         </div>
-                        <div class="edu-modules-list" id="modules-for-${course.id}">
-                            <div class="edu-loading-mini">Loading modules...</div>
-                        </div>
+                        <div class="edu-modules-list" id="modules-for-${course.id}"></div>
                         <div class="edu-orphan-lessons-container" style="margin-top:15px; border-top:1px dashed #ddd; padding-top:15px;">
                             <h4 style="font-size:12px; text-transform:uppercase; color:#888;">Lessons</h4>
-                            <div class="edu-lessons-list" id="orphan-lessons-for-${course.id}" data-id="0">
-                                <!-- Orphan lessons go here -->
-                            </div>
+                            <div class="edu-lessons-list" id="orphan-lessons-for-${course.id}" data-id="0"></div>
                             <div style="margin-top:10px;">
                                 <button class="edu-btn edu-btn-small edu-add-lesson" data-module-id="0" data-course-id="${course.id}">+ Add a Lesson</button>
                             </div>
@@ -397,23 +399,9 @@
                     </div>
                 `);
                 $list.append($courseRow);
-                this.fetchModules(course.id);
-                this.fetchLessons(0, course.id);
-            });
-        },
 
-        fetchModules: function(courseId) {
-            const self = this;
-            $.ajax({
-                url: eduApi.root + 'edupreneur/v1/modules',
-                method: 'GET',
-                cache: false,
-                data: { course_id: courseId },
-                beforeSend: (xhr) => xhr.setRequestHeader('X-WP-Nonce', eduApi.nonce),
-                success: (modules) => self.renderModules(courseId, modules),
-                error: (err) => {
-                    console.error('Failed to fetch modules for course ' + courseId, err);
-                }
+                this.renderModules(course.id, course.modules || []);
+                this.renderLessons(0, course.orphan_lessons || [], course.id);
             });
         },
 
@@ -439,9 +427,7 @@
                             </div>
                         </div>
                         <div class="edu-module-content">
-                            <div class="edu-lessons-list" id="lessons-for-${module.id}">
-                                <!-- Lessons go here -->
-                            </div>
+                            <div class="edu-lessons-list" id="lessons-for-${module.id}"></div>
                             <div style="margin-top:10px;">
                                 <button class="edu-btn edu-btn-small edu-add-lesson" data-module-id="${module.id}">+ Add a Lesson</button>
                             </div>
@@ -449,27 +435,9 @@
                     </div>
                 `);
                 $container.append($moduleBox);
-                this.fetchLessons(module.id, courseId);
+                this.renderLessons(module.id, module.lessons || [], courseId);
             });
             setTimeout(() => this.initSortable(), 500);
-        },
-
-        fetchLessons: function(moduleId, courseId) {
-            const self = this;
-            $.ajax({
-                url: eduApi.root + 'edupreneur/v1/lessons',
-                method: 'GET',
-                cache: false,
-                data: {
-                    course_id: courseId,
-                    module_id: moduleId
-                },
-                beforeSend: (xhr) => xhr.setRequestHeader('X-WP-Nonce', eduApi.nonce),
-                success: (lessons) => self.renderLessons(moduleId, lessons, courseId),
-                error: (err) => {
-                    console.error('Failed to fetch lessons for module ' + moduleId, err);
-                }
-            });
         },
 
         renderLessons: function(moduleId, lessons, courseId) {

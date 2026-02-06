@@ -447,10 +447,17 @@ final class EdupreneurPro {
 		if ( strpos( $hook, 'edu' ) !== false || strpos( $hook, 'edupreneur' ) !== false ) {
 			wp_enqueue_style( 'edu-admin-css', plugin_dir_url( __FILE__ ) . 'assets/css/admin.css', array(), EDUPRENEUR_PRO_VERSION );
 
+			$courses = array();
+			if ( strpos( $hook, 'page_edu-courses' ) !== false ) {
+				$repo = new \EdupreneurPro\Modules\CourseBuilder\Repositories\CourseRepository();
+				$courses = $repo->all();
+			}
+
 			wp_localize_script( 'jquery', 'eduApi', array(
 				'root'    => esc_url_raw( rest_url() ),
 				'nonce'   => wp_create_nonce( 'wp_rest' ),
 				'siteUrl' => esc_url( home_url( '/' ) ),
+				'courses' => $courses
 			) );
 
 			if ( strpos( $hook, 'page_edu-courses' ) !== false ) {
