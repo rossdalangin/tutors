@@ -8,6 +8,8 @@ class ShortcodeService {
 		add_shortcode( 'edu_categories', array( $this, 'render_categories' ) );
 		add_shortcode( 'edu_homepage', array( $this, 'render_homepage' ) );
 		add_shortcode( 'edu_checkout', array( $this, 'render_checkout' ) );
+		add_shortcode( 'edu_certificate', array( $this, 'render_certificate' ) );
+		add_shortcode( 'edu_messages', array( $this, 'render_messages' ) );
 	}
 
 	public function render_course_card_shortcode( $atts ) {
@@ -107,6 +109,124 @@ class ShortcodeService {
 		$output .= $this->render_categories();
 
 		return $output;
+	}
+
+	public function render_certificate( $atts ) {
+		if ( ! is_user_logged_in() ) {
+			return '<p>' . __( 'Please log in to view certificates.', 'edupreneur-pro' ) . '</p>';
+		}
+
+		$atts = shortcode_atts( array( 'course_id' => 0 ), $atts );
+		$course_id = intval( $atts['course_id'] );
+
+		if ( ! $course_id && isset( $_GET['course_id'] ) ) {
+			$course_id = intval( $_GET['course_id'] );
+		}
+
+		if ( ! $course_id ) {
+			return '<p>' . __( 'No course specified.', 'edupreneur-pro' ) . '</p>';
+		}
+
+		global $wpdb;
+		$user_id = get_current_user_id();
+
+		// Check if course is completed
+		$total_lessons = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}edu_lessons WHERE course_id = %d", $course_id ) );
+		$completed_lessons = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}edu_progress WHERE student_id = %d AND course_id = %d AND completed = 1", $user_id, $course_id ) );
+
+		if ( $total_lessons > 0 && $completed_lessons < $total_lessons ) {
+			return '<div class="edu-card edu-warning"><h3>' . __( 'Course Incomplete', 'edupreneur-pro' ) . '</h3><p>' . __( 'You must complete all lessons to earn your certificate.', 'edupreneur-pro' ) . '</p></div>';
+		}
+
+		$certificate_service = new \EdupreneurPro\Modules\CourseBuilder\Services\CertificateService();
+		return $certificate_service->generate_certificate( $user_id, $course_id );
+	}
+
+	public function render_messages() {
+		if ( ! is_user_logged_in() ) {
+			return '<p>' . __( 'Please log in to use direct messaging.', 'edupreneur-pro' ) . '</p>';
+		}
+
+		global $wpdb;
+		$user_id = get_current_user_id();
+		$board = new \EdupreneurPro\Modules\Community\Services\DiscussionBoard();
+
+		$recipient_id = isset( $_GET['to'] ) ? intval( $_GET['to'] ) : 0;
+
+		if ( isset( $_POST['edu_message_content'] ) && check_admin_referer( 'edu_send_message' ) ) {
+			$board->create_post( array(
+				'content'      => $_POST['edu_message_content'],
+				'recipient_id' => $recipient_id,
+				'course_id'    => 0
+			) );
+			wp_safe_redirect( add_query_arg( 'msg_sent', 1 ) );
+			exit;
+		}
+
+		ob_start();
+		echo '<div class="edu-messages-container edu-card">';
+
+		if ( $recipient_id > 0 ) {
+			$recipient = get_userdata( $recipient_id );
+			echo '<h3>' . sprintf( __( 'Message with %s', 'edupreneur-pro' ), esc_html( $recipient->display_name ) ) . '</h3>';
+			echo '<a href="' . remove_query_arg( 'to' ) . '" class="edu-btn edu-btn-small" style="margin-bottom:20px;">' . __( '← Back to Inbox', 'edupreneur-pro' ) . '</a>';
+
+			$messages = $board->get_direct_messages( $user_id, $recipient_id );
+			echo '<div class="edu-chat-box" style="height: 400px; overflow-y: auto; border: 1px solid #eee; padding: 20px; border-radius: 8px; background: #fafafa; margin-bottom: 20px;">';
+			if ( empty( $messages ) ) {
+				echo '<p style="text-align:center; color:#999;">' . __( 'No messages yet. Start the conversation!', 'edupreneur-pro' ) . '</p>';
+			} else {
+				foreach ( $messages as $msg ) {
+					$is_me = (int)$msg->user_id === $user_id;
+					$align = $is_me ? 'right' : 'left';
+					$bg = $is_me ? 'var(--edu-primary)' : '#fff';
+					$color = $is_me ? '#fff' : '#333';
+					echo '<div style="text-align:' . $align . '; margin-bottom:15px;">';
+					echo '<div style="display:inline-block; max-width:80%; padding:10px 15px; border-radius:15px; background:' . $bg . '; color:' . $color . '; box-shadow:0 2px 5px rgba(0,0,0,0.05); text-align:left;">';
+					echo wp_kses_post( $msg->content );
+					echo '<div style="font-size:10px; opacity:0.6; margin-top:5px;">' . date( 'H:i', strtotime( $msg->created_at ) ) . '</div>';
+					echo '</div></div>';
+				}
+			}
+			echo '</div>';
+
+			echo '<form method="post">';
+			wp_nonce_field( 'edu_send_message' );
+			echo '<textarea name="edu_message_content" style="width:100%; height:100px; padding:10px; border-radius:8px; border:1px solid #ddd;" placeholder="' . __( 'Type your message...', 'edupreneur-pro' ) . '" required></textarea>';
+			echo '<button type="submit" class="edu-btn" style="margin-top:10px;">' . __( 'Send Message', 'edupreneur-pro' ) . '</button>';
+			echo '</form>';
+		} else {
+			echo '<h3>' . __( 'My Messages', 'edupreneur-pro' ) . '</h3>';
+			$inbox = $board->get_direct_messages( $user_id );
+
+			if ( empty( $inbox ) ) {
+				echo '<p>' . __( 'You have no messages yet.', 'edupreneur-pro' ) . '</p>';
+			} else {
+				// Group by other user
+				$conversations = array();
+				foreach ( $inbox as $msg ) {
+					$other_id = (int)$msg->user_id === $user_id ? $msg->recipient_id : $msg->user_id;
+					if ( $other_id == 0 ) continue;
+					if ( ! isset( $conversations[$other_id] ) ) {
+						$conversations[$other_id] = $msg;
+					}
+				}
+
+				echo '<div class="edu-inbox-list">';
+				foreach ( $conversations as $other_id => $last_msg ) {
+					$other_user = get_userdata( $other_id );
+					echo '<div class="edu-card" style="margin-bottom:10px; cursor:pointer;" onclick="window.location.href=\'' . add_query_arg( 'to', $other_id ) . '\'">';
+					echo '<div style="display:flex; justify-content:space-between; align-items:center;">';
+					echo '<div><strong>' . esc_html( $other_user->display_name ) . '</strong>';
+					echo '<p style="margin:5px 0 0 0; color:#666; font-size:14px;">' . esc_html( wp_trim_words( $last_msg->content, 10 ) ) . '</p></div>';
+					echo '<span style="font-size:12px; color:#999;">' . date( 'M j', strtotime( $last_msg->created_at ) ) . '</span>';
+					echo '</div></div>';
+				}
+				echo '</div>';
+			}
+		}
+		echo '</div>';
+		return ob_get_clean();
 	}
 
 	public function render_checkout() {

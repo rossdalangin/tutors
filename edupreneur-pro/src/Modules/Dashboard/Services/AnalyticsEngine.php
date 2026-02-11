@@ -13,6 +13,11 @@ class AnalyticsEngine {
 	 * @return array
 	 */
 	public function get_revenue_stats() {
+		$stats = get_transient( 'edu_revenue_stats' );
+		if ( $stats !== false ) {
+			return $stats;
+		}
+
 		global $wpdb;
 
 		$total_gross = $wpdb->get_var( "SELECT SUM(total_amount) FROM {$wpdb->prefix}edu_orders WHERE status = 'completed'" );
@@ -23,7 +28,7 @@ class AnalyticsEngine {
 		$students = $wpdb->get_var( "SELECT COUNT(DISTINCT student_id) FROM {$wpdb->prefix}edu_enrollments" );
 		$avg_completion = $wpdb->get_var( "SELECT AVG(completed) FROM {$wpdb->prefix}edu_progress" ) * 100;
 
-		return array(
+		$stats = array(
 			'gross'           => $total_gross ?: 0,
 			'refunds'         => $total_refunds ?: 0,
 			'net'             => $net_revenue ?: 0,
@@ -32,6 +37,9 @@ class AnalyticsEngine {
 			'avg_completion'  => round( $avg_completion ?: 0, 1 ),
 			'avg_order_value' => $count ? ( $total_gross / $count ) : 0,
 		);
+
+		set_transient( 'edu_revenue_stats', $stats, HOUR_IN_SECONDS );
+		return $stats;
 	}
 
 	/**

@@ -9,7 +9,27 @@ class DiscussionBoard {
 	}
 	public function get_posts( $course_id ) {
 		global $wpdb;
-		return $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$this->table} WHERE course_id = %d ORDER BY created_at DESC", $course_id ) );
+		return $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$this->table} WHERE course_id = %d AND recipient_id = 0 ORDER BY created_at DESC", $course_id ) );
+	}
+
+	public function get_direct_messages( $user_id, $other_user_id = 0 ) {
+		global $wpdb;
+		if ( $other_user_id > 0 ) {
+			return $wpdb->get_results( $wpdb->prepare(
+				"SELECT * FROM {$this->table}
+				WHERE (user_id = %d AND recipient_id = %d)
+				OR (user_id = %d AND recipient_id = %d)
+				ORDER BY created_at ASC",
+				$user_id, $other_user_id, $other_user_id, $user_id
+			) );
+		}
+
+		return $wpdb->get_results( $wpdb->prepare(
+			"SELECT * FROM {$this->table}
+			WHERE user_id = %d OR recipient_id = %d
+			ORDER BY created_at DESC",
+			$user_id, $user_id
+		) );
 	}
 	public function create_post( $data ) {
 		global $wpdb;

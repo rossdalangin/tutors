@@ -46,6 +46,7 @@ final class EdupreneurPro {
 		add_action( 'plugins_loaded', array( $this, 'on_plugins_loaded' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_frontend_assets' ) );
+		add_action( 'wp_head', array( $this, 'add_pwa_tags' ) );
 		add_action( 'init', array( $this, 'track_affiliate_referral' ) );
 		add_action( 'init', array( $this, 'handle_lesson_completion' ) );
 		add_action( 'init', array( $this, 'handle_course_redirects' ) );
@@ -438,6 +439,18 @@ final class EdupreneurPro {
 	 */
 	public function enqueue_frontend_assets() {
 		wp_enqueue_style( 'edu-frontend-css', plugin_dir_url( __FILE__ ) . 'assets/css/admin.css', array(), EDUPRENEUR_PRO_VERSION );
+	}
+
+	/**
+	 * Add PWA meta tags and manifest.
+	 */
+	public function add_pwa_tags() {
+		echo '<link rel="manifest" href="' . plugin_dir_url( __FILE__ ) . 'manifest.json">' . PHP_EOL;
+		echo '<meta name="theme-color" content="#4a90e2">' . PHP_EOL;
+		echo '<meta name="mobile-web-app-capable" content="yes">' . PHP_EOL;
+		echo '<meta name="apple-mobile-web-app-capable" content="yes">' . PHP_EOL;
+		echo '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">' . PHP_EOL;
+		echo '<meta name="apple-mobile-web-app-title" content="EdupreneurPro">' . PHP_EOL;
 	}
 
 	/**

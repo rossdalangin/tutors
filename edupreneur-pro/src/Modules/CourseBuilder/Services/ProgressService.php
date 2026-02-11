@@ -18,6 +18,23 @@ class ProgressService {
 			}
 		}
 
+		// Progress logic: Check if previous lesson is completed
+		$prev_lesson_id = $wpdb->get_var( $wpdb->prepare(
+			"SELECT id FROM {$wpdb->prefix}edu_lessons WHERE course_id = %d AND order_index < %d ORDER BY order_index DESC LIMIT 1",
+			$lesson->course_id, $lesson->order_index
+		) );
+
+		if ( $prev_lesson_id ) {
+			$is_completed = $wpdb->get_var( $wpdb->prepare(
+				"SELECT completed FROM {$wpdb->prefix}edu_progress WHERE student_id = %d AND lesson_id = %d",
+				$user_id, $prev_lesson_id
+			) );
+
+			if ( ! $is_completed ) {
+				return false; // Previous lesson not completed
+			}
+		}
+
 		return true;
 	}
 
