@@ -29,6 +29,9 @@ EdupreneurPro is designed to follow the natural flow of an education business:
 - **Lesson Player:** Delivers video content and resources.
 - **Quizzes:** Interactive multiple-choice questions to test knowledge.
 - **Community:** Each course can have a discussion board where students and tutors interact.
+- **Direct Messaging:** Secure private chat between students and tutors.
+- **Member Directory:** A searchable list of the learning community.
+- **Certificates:** Automated completion awards with verification tokens.
 
 ### 5. Business Analytics (Reporting)
 - **Insights:** Use the Business Dashboard to track Gross Sales, Net Profit, and student completion rates.
@@ -72,6 +75,22 @@ The learner's central hub.
 The multi-step payment and enrollment system.
 - **Details:** Automatically handles the course selection from the URL and guides the user through payment.
 - **Usage:** Create a page named "Checkout" and paste `[edu_checkout]`.
+
+### `[edu_certificate]`
+Renders a high-quality printable certificate for a specific course.
+- **Parameters:**
+    - `course_id` (int): The ID of the completed course.
+- **Note:** Only displays if the current user has completed 100% of the course lessons.
+
+### `[edu_messages]`
+The private messaging center.
+- **Details:** Provides an inbox for all private conversations and a chat interface for specific recipients.
+- **Usage:** Create a page named "Messages" and paste `[edu_messages]`.
+
+### `[edu_directory]`
+Displays a searchable grid of all community members.
+- **Details:** Shows names, roles, and avatars, with quick "Message" buttons to initiate private chats.
+- **Usage:** `[edu_directory]`
 
 ---
 

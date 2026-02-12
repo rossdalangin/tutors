@@ -161,6 +161,28 @@ class Schema {
 				expiry_days int(11) DEFAULT 0,
 				PRIMARY KEY  (id)
 			) $charset_collate;",
+
+			"{$prefix}coupons" => "CREATE TABLE {$prefix}coupons (
+				id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+				code varchar(50) NOT NULL,
+				discount_type varchar(20) DEFAULT 'percentage',
+				discount_amount decimal(10,2) NOT NULL,
+				expiry_date datetime DEFAULT NULL,
+				usage_limit int(11) DEFAULT 0,
+				usage_count int(11) DEFAULT 0,
+				PRIMARY KEY  (id)
+			) $charset_collate;",
+
+			"{$prefix}audit_log" => "CREATE TABLE {$prefix}audit_log (
+				id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+				user_id bigint(20) UNSIGNED NOT NULL,
+				action varchar(255) NOT NULL,
+				object_type varchar(50),
+				object_id bigint(20) UNSIGNED,
+				details text,
+				created_at datetime DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY  (id)
+			) $charset_collate;",
 		);
 	}
 }

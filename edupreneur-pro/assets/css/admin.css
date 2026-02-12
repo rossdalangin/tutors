@@ -198,4 +198,37 @@
     .edu-admin-wrap {
         margin: 15px;
     }
+    .edu-modal-content {
+        width: 95%;
+        margin: 10px;
+    }
+    .wp-list-table {
+        display: block;
+        overflow-x: auto;
+    }
+    .edu-header h1 {
+        font-size: 22px;
+    }
+    .edu-stat-val {
+        font-size: 24px;
+    }
+    .edu-course-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .edu-course-header .edu-actions {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .edu-btn {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 5px;
+    }
+    .edu-form-group input, .edu-form-group textarea, .edu-form-group select {
+        font-size: 16px; /* Prevents iOS zoom */
+    }
 }

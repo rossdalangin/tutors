@@ -49,6 +49,7 @@ final class EdupreneurPro {
 		add_action( 'wp_head', array( $this, 'add_pwa_tags' ) );
 		add_action( 'init', array( $this, 'track_affiliate_referral' ) );
 		add_action( 'init', array( $this, 'handle_lesson_completion' ) );
+		add_action( 'init', array( $this, 'handle_data_export' ) );
 		add_action( 'init', array( $this, 'handle_course_redirects' ) );
 		add_action( 'init', array( $this, 'ensure_admin_capabilities' ) );
 		add_shortcode( 'edu_student_dashboard', array( $this, 'render_student_dashboard' ) );
@@ -68,11 +69,36 @@ final class EdupreneurPro {
 	/**
 	 * Render student dashboard shortcode.
 	 */
+	public function handle_data_export() {
+		if ( isset( $_POST['edu_export_data'] ) && check_admin_referer( 'edu_export_data' ) ) {
+			$user_id = get_current_user_id();
+			$data = \EdupreneurPro\Core\SystemService::export_student_data( $user_id );
+
+			header( 'Content-Type: application/json' );
+			header( 'Content-Disposition: attachment; filename="edupreneur-data-export.json"' );
+			echo $data;
+			exit;
+		}
+	}
+
 	public function handle_lesson_completion() {
 		if ( isset( $_POST['lesson_to_complete'] ) && check_admin_referer( 'edu_complete_lesson' ) ) {
+			global $wpdb;
 			$lesson_id = intval( $_POST['lesson_to_complete'] );
+			$user_id = get_current_user_id();
 			$progress = new \EdupreneurPro\Modules\CourseBuilder\Services\ProgressService();
-			$progress->mark_lesson_complete( get_current_user_id(), $lesson_id );
+			$progress->mark_lesson_complete( $user_id, $lesson_id );
+
+			// Check if course is now complete
+			$lesson = $wpdb->get_row( $wpdb->prepare( "SELECT course_id FROM {$wpdb->prefix}edu_lessons WHERE id = %d", $lesson_id ) );
+			if ( $lesson ) {
+				$total_lessons = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}edu_lessons WHERE course_id = %d", $lesson->course_id ) );
+				$completed_lessons = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}edu_progress WHERE student_id = %d AND course_id = %d AND completed = 1", $user_id, $lesson->course_id ) );
+
+				if ( $total_lessons > 0 && $completed_lessons >= $total_lessons ) {
+					\EdupreneurPro\Core\EmailService::send_completion_email( $user_id, $lesson->course_id );
+				}
+			}
 
 			wp_safe_redirect( add_query_arg( array( 'edu_lesson' => $lesson_id, 'completed' => 1 ), wp_get_referer() ) );
 			exit;
@@ -182,6 +208,17 @@ final class EdupreneurPro {
 			echo '<div class="edu-video-container" style="margin: 20px 0;">';
 			echo $this->get_video_embed( $lesson->video_url );
 			echo '</div>';
+		}
+
+		if ( $lesson->lesson_type === 'live' && ! empty( $lesson->video_url ) ) {
+			$cal_url = 'https://www.google.com/calendar/render?action=TEMPLATE&text=' . urlencode( $lesson->title ) . '&details=' . urlencode( 'Join our live session: ' . $lesson->video_url );
+			echo '<div class="edu-card" style="background:#e3f2fd; border-left:5px solid #2196f3; margin:20px 0;">';
+			echo '<h4>' . __( 'Upcoming Live Session', 'edupreneur-pro' ) . '</h4>';
+			echo '<p>' . __( 'Don\'t miss out! Add this session to your calendar to stay notified.', 'edupreneur-pro' ) . '</p>';
+			echo '<div style="display:flex; gap:10px;">';
+			echo '<a href="' . esc_url( $lesson->video_url ) . '" target="_blank" class="edu-btn" style="background:#2196f3;">' . __( 'Join Meeting Now', 'edupreneur-pro' ) . '</a>';
+			echo '<a href="' . esc_url( $cal_url ) . '" target="_blank" class="edu-btn" style="background:#fff; color:#2196f3; border:1px solid #2196f3;">' . __( 'Add to Google Calendar', 'edupreneur-pro' ) . '</a>';
+			echo '</div></div>';
 		}
 
 		echo '<div class="edu-lesson-content">' . wpautop( $lesson->content ) . '</div>';
@@ -419,6 +456,14 @@ final class EdupreneurPro {
 			echo '<script>jQuery("#student-join-affiliate").click(function(){ jQuery.post(eduApi.root + "edupreneur/v1/affiliates/register", { _wpnonce: eduApi.nonce }, function(){ location.reload(); }); });</script>';
 			echo '</div>';
 		}
+
+		echo '<div class="edu-card" style="margin-top:20px;">';
+		echo '<h3>' . __( 'Privacy & Data', 'edupreneur-pro' ) . '</h3>';
+		echo '<p>' . __( 'You can download a copy of your learning data at any time.', 'edupreneur-pro' ) . '</p>';
+		echo '<form method="post">';
+		wp_nonce_field( 'edu_export_data' );
+		echo '<button type="submit" name="edu_export_data" value="1" class="edu-btn edu-btn-small">' . __( 'Download My Data (JSON)', 'edupreneur-pro' ) . '</button>';
+		echo '</form></div>';
 
 		echo '</div>';
 		return ob_get_clean();

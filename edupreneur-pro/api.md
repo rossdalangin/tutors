@@ -42,3 +42,11 @@ Authentication is handled via standard WordPress nonces for AJAX requests or via
 `POST /community/posts` - Create a new post.
 `PUT /community/posts/{id}` - Update a post.
 `DELETE /community/posts/{id}` - Delete a post.
+
+### Private Messaging
+`GET /community/messages?to={id}` - Get DM conversation with a user.
+`POST /community/messages` - Send a direct message.
+
+## System Tools
+`POST /system/sample-data` - Seed the database with sample data.
+`POST /system/reset` - Clear all custom plugin tables.

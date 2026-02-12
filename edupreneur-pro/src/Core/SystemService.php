@@ -235,4 +235,22 @@ class SystemService {
 			'asset_type' => 'banner'
 		) );
 	}
+
+	public static function export_student_data( $user_id ) {
+		global $wpdb;
+		$data = array();
+		$tables = array(
+			'edu_enrollments'     => 'student_id',
+			'edu_orders'          => 'user_id',
+			'edu_progress'        => 'student_id',
+			'edu_community_posts' => 'user_id',
+			'edu_affiliates'      => 'user_id'
+		);
+
+		foreach ( $tables as $table => $column ) {
+			$data[$table] = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}$table WHERE $column = %d", $user_id ) );
+		}
+
+		return json_encode( $data, JSON_PRETTY_PRINT );
+	}
 }

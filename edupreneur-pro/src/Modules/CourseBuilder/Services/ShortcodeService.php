@@ -10,6 +10,7 @@ class ShortcodeService {
 		add_shortcode( 'edu_checkout', array( $this, 'render_checkout' ) );
 		add_shortcode( 'edu_certificate', array( $this, 'render_certificate' ) );
 		add_shortcode( 'edu_messages', array( $this, 'render_messages' ) );
+		add_shortcode( 'edu_directory', array( $this, 'render_directory' ) );
 	}
 
 	public function render_course_card_shortcode( $atts ) {
@@ -142,6 +143,34 @@ class ShortcodeService {
 		return $certificate_service->generate_certificate( $user_id, $course_id );
 	}
 
+	public function render_directory() {
+		if ( ! is_user_logged_in() ) {
+			return '<p>' . __( 'Please log in to view the member directory.', 'edupreneur-pro' ) . '</p>';
+		}
+
+		$users = get_users( array( 'role__in' => array( 'student', 'tutor', 'administrator' ) ) );
+		$dm_page_url = get_permalink(); // Assuming the DM shortcode is on the same page or we can redirect there
+
+		ob_start();
+		echo '<div class="edu-directory-wrap">';
+		echo '<h2>' . __( 'Member Directory', 'edupreneur-pro' ) . '</h2>';
+		echo '<div class="edu-grid">';
+		foreach ( $users as $user ) {
+			if ( $user->ID === get_current_user_id() ) continue;
+
+			echo '<div class="edu-card" style="text-align:center;">';
+			echo get_avatar( $user->ID, 80, '', '', array( 'style' => 'border-radius:50%; margin-bottom:15px;' ) );
+			echo '<h3>' . esc_html( $user->display_name ) . '</h3>';
+			echo '<p class="tag">' . esc_html( ucfirst( $user->roles[0] ) ) . '</p>';
+
+			$msg_url = add_query_arg( 'to', $user->ID, $dm_page_url );
+			echo '<a href="' . esc_url( $msg_url ) . '" class="edu-btn edu-btn-block" style="margin-top:15px;">' . __( 'Send Message', 'edupreneur-pro' ) . '</a>';
+			echo '</div>';
+		}
+		echo '</div></div>';
+		return ob_get_clean();
+	}
+
 	public function render_messages() {
 		if ( ! is_user_logged_in() ) {
 			return '<p>' . __( 'Please log in to use direct messaging.', 'edupreneur-pro' ) . '</p>';
@@ -245,6 +274,24 @@ class ShortcodeService {
 		if ( ! $course ) return '<p>' . __( 'Course not found.', 'edupreneur-pro' ) . '</p>';
 
 		$base_url = ( is_admin() && isset( $_GET['page'] ) ) ? admin_url( 'admin.php?page=' . sanitize_text_field( $_GET['page'] ) ) : get_permalink();
+		$coupon_repo = new \EdupreneurPro\Modules\Payments\Repositories\CouponRepository();
+		$discount = 0;
+		$applied_coupon_id = 0;
+
+		if ( isset( $_POST['edu_coupon_code'] ) && ! empty( $_POST['edu_coupon_code'] ) ) {
+			$coupon = $coupon_repo->get_by_code( sanitize_text_field( $_POST['edu_coupon_code'] ) );
+			if ( $coupon_repo->is_valid( $coupon ) ) {
+				$applied_coupon_id = $coupon->id;
+				if ( $coupon->discount_type === 'percentage' ) {
+					$discount = $course->price * ( $coupon->discount_amount / 100 );
+				} else {
+					$discount = $coupon->discount_amount;
+				}
+				$discount = min( $discount, $course->price );
+			}
+		}
+
+		$final_price = $course->price - $discount;
 
 		if ( isset( $_POST['edu_confirm_purchase'] ) && check_admin_referer( 'edu_checkout' ) ) {
 			$gateway_id = isset( $_POST['edu_gateway_used'] ) ? sanitize_text_field( $_POST['edu_gateway_used'] ) : 'simulated';
@@ -273,6 +320,8 @@ class ShortcodeService {
 					<?php wp_nonce_field( 'edu_checkout' ); ?>
 					<input type="hidden" name="edu_final_enroll" value="1">
 					<input type="hidden" name="edu_gateway_used" value="<?php echo esc_attr($gateway_id); ?>">
+					<input type="hidden" name="edu_final_price" value="<?php echo esc_attr($_POST['edu_final_price']); ?>">
+					<input type="hidden" name="edu_applied_coupon" value="<?php echo esc_attr($_POST['edu_applied_coupon']); ?>">
 				</form>
 
 				<script>
@@ -287,11 +336,12 @@ class ShortcodeService {
 
 		if ( isset( $_POST['edu_final_enroll'] ) && check_admin_referer( 'edu_checkout' ) ) {
 			$gateway_id = isset( $_POST['edu_gateway_used'] ) ? sanitize_text_field( $_POST['edu_gateway_used'] ) : 'simulated';
+			$paid_amount = isset( $_POST['edu_final_price'] ) ? floatval( $_POST['edu_final_price'] ) : $course->price;
 
 			// Simulate order creation
 			$wpdb->insert( "{$wpdb->prefix}edu_orders", array(
 				'user_id'      => get_current_user_id(),
-				'total_amount' => $course->price,
+				'total_amount' => $paid_amount,
 				'status'       => 'completed'
 			) );
 			$order_id = $wpdb->insert_id;
@@ -299,9 +349,14 @@ class ShortcodeService {
 			// Record Payment
 			$wpdb->insert( "{$wpdb->prefix}edu_payments", array(
 				'order_id' => $order_id,
-				'amount'   => $course->price,
+				'amount'   => $paid_amount,
 				'status'   => 'succeeded'
 			) );
+
+			// Increment coupon usage if applied
+			if ( ! empty( $_POST['edu_applied_coupon'] ) ) {
+				$coupon_repo->increment_usage( intval( $_POST['edu_applied_coupon'] ) );
+			}
 
 			// Enroll student
 			$wpdb->insert( "{$wpdb->prefix}edu_enrollments", array(
@@ -309,6 +364,9 @@ class ShortcodeService {
 				'course_id'  => $course_id,
 				'status'     => 'active'
 			) );
+
+			// Trigger Welcome Email
+			\EdupreneurPro\Core\EmailService::send_welcome_email( get_current_user_id(), $course_id );
 
 			// Check for affiliate cookie
 			if ( isset( $_COOKIE['edu_affiliate'] ) ) {
@@ -359,13 +417,24 @@ class ShortcodeService {
 		$output .= '<h2 style="margin-top:0;">' . __( 'Complete Your Enrollment', 'edupreneur-pro' ) . '</h2>';
 		$output .= '<div style="background:#f8f9fa; padding:20px; border-radius:8px; margin-bottom:30px;">';
 		$output .= '<div style="display:flex; justify-content:space-between; margin-bottom:10px;"><strong>' . __( 'Course Title:', 'edupreneur-pro' ) . '</strong><span>' . esc_html( $course->title ) . '</span></div>';
-		$output .= '<div style="display:flex; justify-content:space-between; font-size:1.2em; border-top:1px solid #ddd; padding-top:10px;"><strong>' . __( 'Total Due:', 'edupreneur-pro' ) . '</strong><span style="color:var(--edu-primary); font-weight:700;">$' . number_format( $course->price, 2 ) . '</span></div>';
+		if ( $discount > 0 ) {
+			$output .= '<div style="display:flex; justify-content:space-between; margin-bottom:10px; color:#dc3545;"><strong>' . __( 'Discount:', 'edupreneur-pro' ) . '</strong><span>-$' . number_format( $discount, 2 ) . '</span></div>';
+		}
+		$output .= '<div style="display:flex; justify-content:space-between; font-size:1.2em; border-top:1px solid #ddd; padding-top:10px;"><strong>' . __( 'Total Due:', 'edupreneur-pro' ) . '</strong><span style="color:var(--edu-primary); font-weight:700;">$' . number_format( $final_price, 2 ) . '</span></div>';
 		$output .= '</div>';
+
+		$output .= '<form method="post" style="margin-bottom:30px;">';
+		$output .= '<div class="edu-form-group" style="display:flex; gap:10px;">';
+		$output .= '<input type="text" name="edu_coupon_code" placeholder="' . __( 'Coupon Code', 'edupreneur-pro' ) . '" value="' . ( isset($_POST['edu_coupon_code']) ? esc_attr($_POST['edu_coupon_code']) : '' ) . '" style="flex-grow:1; margin-bottom:0;">';
+		$output .= '<button type="submit" class="edu-btn edu-btn-small">' . __( 'Apply', 'edupreneur-pro' ) . '</button>';
+		$output .= '</div></form>';
 
 		$output .= '<p class="edu-caption" style="margin-bottom:20px;">' . __( 'Select your preferred payment gateway.', 'edupreneur-pro' ) . '</p>';
 
 		$output .= '<form method="post">';
 		$output .= wp_nonce_field( 'edu_checkout', '_wpnonce', true, false );
+		$output .= '<input type="hidden" name="edu_final_price" value="' . esc_attr($final_price) . '">';
+		$output .= '<input type="hidden" name="edu_applied_coupon" value="' . esc_attr($applied_coupon_id) . '">';
 		$output .= '<div class="edu-gateway-options" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:20px;">';
 		$output .= '<label style="border:2px solid #eee; padding:15px; border-radius:8px; text-align:center; cursor:pointer; display:block;"><input type="radio" name="edu_gateway" value="stripe" checked><br><strong>Stripe</strong><br><small>Cards / ApplePay</small></label>';
 		$output .= '<label style="border:2px solid #eee; padding:15px; border-radius:8px; text-align:center; cursor:pointer; display:block;"><input type="radio" name="edu_gateway" value="paypal"><br><strong>PayPal</strong><br><small>PayPal / Credit</small></label>';
@@ -426,8 +495,10 @@ class ShortcodeService {
 						<?php wp_nonce_field( 'edu_checkout' ); ?>
 						<input type="hidden" name="edu_confirm_purchase" value="1">
 						<input type="hidden" name="edu_gateway_used" value="<?php echo esc_attr($gateway_id); ?>">
+						<input type="hidden" name="edu_final_price" value="<?php echo esc_attr($_POST['edu_final_price']); ?>">
+						<input type="hidden" name="edu_applied_coupon" value="<?php echo esc_attr($_POST['edu_applied_coupon']); ?>">
 						<button type="submit" style="width:100%; padding:14px; background:<?php echo $accent_color; ?>; color:#fff; border:none; border-radius:4px; font-size:16px; font-weight:600; cursor:pointer; box-shadow: 0 4px 6px rgba(50,50,93,.11), 0 1px 3px rgba(0,0,0,.08); transition: all 0.15s ease;">
-							<?php printf( __('Pay $%s with %s', 'edupreneur-pro'), number_format($course->price, 2), $gateway_name ); ?>
+							<?php printf( __('Pay $%s with %s', 'edupreneur-pro'), number_format(floatval($_POST['edu_final_price']), 2), $gateway_name ); ?>
 						</button>
 					</form>
 
