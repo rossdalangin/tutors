@@ -125,6 +125,7 @@ final class EdupreneurPro {
 		}
 	}
 
+
 	public function handle_lesson_display( $content ) {
 		global $wpdb;
 
@@ -223,6 +224,33 @@ final class EdupreneurPro {
 
 		echo '<div class="edu-lesson-content">' . wpautop( $lesson->content ) . '</div>';
 
+		// Student Notes UI
+		$note = $wpdb->get_var( $wpdb->prepare( "SELECT content FROM {$wpdb->prefix}edu_notes WHERE user_id = %d AND lesson_id = %d", get_current_user_id(), $lesson_id ) );
+		echo '<div class="edu-card" style="margin-top:30px; background:#fff9c4; border-left:5px solid #fbc02d;">';
+		echo '<h4>📝 ' . __( 'My Private Notes', 'edupreneur-pro' ) . '</h4>';
+		echo '<textarea id="edu-lesson-note" style="width:100%; height:100px; background:transparent; border:none; outline:none; font-family:inherit; resize:vertical;" placeholder="' . __( 'Type your notes here... (auto-saves)', 'edupreneur-pro' ) . '">' . esc_textarea( $note ) . '</textarea>';
+		echo '<div id="edu-note-status" style="font-size:10px; color:#666; margin-top:5px; text-align:right;"></div>';
+		echo '</div>';
+
+		echo '<script>
+		(function($){
+			var timeout = null;
+			$("#edu-lesson-note").on("keyup", function(){
+				clearTimeout(timeout);
+				$("#edu-note-status").text("' . __( 'Saving...', 'edupreneur-pro' ) . '");
+				timeout = setTimeout(function(){
+					$.post(eduApi.root + "edupreneur/v1/notes", {
+						lesson_id: ' . $lesson_id . ',
+						content: $("#edu-lesson-note").val(),
+						_wpnonce: eduApi.nonce
+					}, function(){
+						$("#edu-note-status").text("' . __( 'Saved locally and to cloud', 'edupreneur-pro' ) . '");
+					});
+				}, 1000);
+			});
+		})(jQuery);
+		</script>';
+
 		if ( $lesson->lesson_type === 'quiz' ) {
 			$quiz = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}edu_quizzes WHERE lesson_id = %d", $lesson_id ) );
 			if ( $quiz && ! empty( $quiz->questions ) ) {
@@ -311,7 +339,8 @@ final class EdupreneurPro {
 		echo '<div style="margin-bottom:10px;"><span class="tag">' . esc_html( $course->category ) . '</span></div>';
 		echo '<p>' . wp_kses_post( $course->description ) . '</p>';
 		echo '<p><strong>' . __( 'Instructor:', 'edupreneur-pro' ) . '</strong> ' . ( $instructor ? $instructor->display_name : 'Expert' ) . '</p>';
-		echo '<div style="font-size:1.5em; color:var(--edu-primary); margin:20px 0;">$' . number_format( $course->price, 2 ) . '</div>';
+		$price_suffix = ( $course->pricing_model === 'subscription' ) ? ' / ' . $course->billing_period : '';
+		echo '<div style="font-size: 1.5em; color:var(--edu-primary); margin:20px 0;">$' . number_format( $course->price, 2 ) . $price_suffix . '</div>';
 		echo '<a href="' . add_query_arg( 'buy_course', $course->id, $base_url ) . '" class="edu-btn edu-btn-block">' . __( 'Enroll Now', 'edupreneur-pro' ) . '</a>';
 		echo '</div>';
 
@@ -455,6 +484,37 @@ final class EdupreneurPro {
 			echo '<button id="student-join-affiliate" class="edu-btn" style="background:#fff; color:#2575fc; font-weight:700;">' . esc_html__( 'Become an Affiliate', 'edupreneur-pro' ) . '</button>';
 			echo '<script>jQuery("#student-join-affiliate").click(function(){ jQuery.post(eduApi.root + "edupreneur/v1/affiliates/register", { _wpnonce: eduApi.nonce }, function(){ location.reload(); }); });</script>';
 			echo '</div>';
+		}
+
+		// Study Groups Section
+		echo '<div class="edu-card" style="margin-top:20px;">';
+		echo '<h3>' . __( 'Study Groups', 'edupreneur-pro' ) . '</h3>';
+		echo '<p>' . __( 'Collaborate with fellow students in small study circles.', 'edupreneur-pro' ) . '</p>';
+
+		global $wpdb;
+		$groups = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}edu_community_posts WHERE content LIKE 'STUDY_GROUP:%' ORDER BY created_at DESC LIMIT 5" );
+
+		if ( ! empty( $groups ) ) {
+			echo '<ul style="margin-bottom:20px;">';
+			foreach ( $groups as $group ) {
+				$name = str_replace( 'STUDY_GROUP: ', '', $group->content );
+				echo '<li><strong>' . esc_html( $name ) . '</strong> (' . date( 'M j', strtotime( $group->created_at ) ) . ')</li>';
+			}
+			echo '</ul>';
+		} else {
+			echo '<p><em>' . __( 'No study groups created yet.', 'edupreneur-pro' ) . '</em></p>';
+		}
+
+		echo '<form method="post" style="display:flex; gap:10px;">';
+		wp_nonce_field( 'edu_create_study_group' );
+		echo '<input type="text" name="edu_group_name" placeholder="' . __( 'Group Name', 'edupreneur-pro' ) . '" style="flex-grow:1;" required>';
+		echo '<button type="submit" class="edu-btn edu-btn-small">' . __( 'Start Group', 'edupreneur-pro' ) . '</button>';
+		echo '</form></div>';
+
+		if ( isset( $_POST['edu_group_name'] ) && check_admin_referer( 'edu_create_study_group' ) ) {
+			$board = new \EdupreneurPro\Modules\Community\Services\DiscussionBoard();
+			$board->create_study_group( 0, $_POST['edu_group_name'], get_current_user_id() );
+			echo '<script>location.reload();</script>';
 		}
 
 		echo '<div class="edu-card" style="margin-top:20px;">';

@@ -253,4 +253,32 @@ class SystemService {
 
 		return json_encode( $data, JSON_PRETTY_PRINT );
 	}
+
+	public static function send_abandoned_reminders() {
+		global $wpdb;
+		$users = get_users();
+		$count = 0;
+
+		foreach ( $users as $user ) {
+			$checkout = get_transient( 'edu_abandoned_checkout_' . $user->ID );
+			if ( $checkout && ( time() - $checkout['time'] ) > ( HOUR_IN_SECONDS * 1 ) ) {
+				$course = $wpdb->get_row( $wpdb->prepare( "SELECT title FROM {$wpdb->prefix}edu_courses WHERE id = %d", $checkout['course_id'] ) );
+				$course_title = $course ? $course->title : "the course";
+
+				$subject = __( 'Did you forget something?', 'edupreneur-pro' );
+				$message = sprintf(
+					__( "Hi %s,\n\nWe noticed you didn't finish enrolling in '%s'.\n\nReturn to checkout here: %s\n\nWe would love to have you in the course!\nEdupreneurPro Team", 'edupreneur-pro' ),
+					$user->display_name,
+					$course_title,
+					add_query_arg( 'buy_course', $checkout['course_id'], home_url( '/checkout/' ) )
+				);
+
+				wp_mail( $user->user_email, $subject, $message );
+				delete_transient( 'edu_abandoned_checkout_' . $user->ID );
+				$count++;
+			}
+		}
+
+		return $count;
+	}
 }

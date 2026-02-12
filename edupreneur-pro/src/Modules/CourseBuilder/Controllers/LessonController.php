@@ -39,6 +39,12 @@ class LessonController extends WP_REST_Controller {
 			'permission_callback' => function() { return current_user_can( 'manage_edu_lessons' ); },
 		) );
 
+		register_rest_route( $this->namespace, '/notes', array(
+			'methods'             => WP_REST_Server::CREATABLE,
+			'callback'            => array( $this, 'save_note' ),
+			'permission_callback' => function() { return is_user_logged_in(); },
+		) );
+
 		register_rest_route( $this->namespace, '/' . $this->rest_base . '/(?P<id>\d+)', array(
 			array(
 				'methods'             => WP_REST_Server::READABLE,
@@ -208,6 +214,21 @@ class LessonController extends WP_REST_Controller {
 	public function delete_item( $request ) {
 		$id = $request['id'];
 		$this->repository->delete( $id );
+		return new WP_REST_Response( array( 'success' => true ), 200 );
+	}
+
+	public function save_note( $request ) {
+		global $wpdb;
+		$user_id = get_current_user_id();
+		$lesson_id = intval( $request['lesson_id'] );
+		$content = sanitize_textarea_field( $request['content'] );
+
+		$wpdb->replace( "{$wpdb->prefix}edu_notes", array(
+			'user_id'   => $user_id,
+			'lesson_id' => $lesson_id,
+			'content'   => $content
+		) );
+
 		return new WP_REST_Response( array( 'success' => true ), 200 );
 	}
 }

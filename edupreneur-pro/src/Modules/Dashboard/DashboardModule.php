@@ -207,6 +207,10 @@ class DashboardModule implements ModuleInterface {
 				$wpdb->delete( "{$wpdb->prefix}edu_community_posts", array( 'id' => intval( $_GET['id'] ) ) );
 			} elseif ( $_GET['action'] === 'pin' ) {
 				$wpdb->update( "{$wpdb->prefix}edu_community_posts", array( 'is_pinned' => 1 ), array( 'id' => intval( $_GET['id'] ) ) );
+			} elseif ( $_GET['action'] === 'lock' ) {
+				$wpdb->update( "{$wpdb->prefix}edu_community_posts", array( 'is_locked' => 1 ), array( 'id' => intval( $_GET['id'] ) ) );
+			} elseif ( $_GET['action'] === 'unlock' ) {
+				$wpdb->update( "{$wpdb->prefix}edu_community_posts", array( 'is_locked' => 0 ), array( 'id' => intval( $_GET['id'] ) ) );
 			}
 			echo '<div class="updated"><p>Action completed.</p></div>';
 		}
@@ -217,8 +221,12 @@ class DashboardModule implements ModuleInterface {
 			$user = get_userdata( $post->user_id );
 			$delete_url = wp_nonce_url( admin_url( 'admin.php?page=edu-community-mgmt&action=delete&id=' . $post->id ), 'edu_comm_action' );
 			$pin_url = wp_nonce_url( admin_url( 'admin.php?page=edu-community-mgmt&action=pin&id=' . $post->id ), 'edu_comm_action' );
+			$lock_action = $post->is_locked ? 'unlock' : 'lock';
+			$lock_label = $post->is_locked ? 'Unlock' : 'Lock';
+			$lock_url = wp_nonce_url( admin_url( 'admin.php?page=edu-community-mgmt&action='.$lock_action.'&id=' . $post->id ), 'edu_comm_action' );
+
 			echo "<tr><td>" . ( $user ? $user->display_name : 'Unknown' ) . "</td><td>" . esc_html( wp_trim_words( $post->content, 10 ) ) . "</td><td>" . ( $post->is_pinned ? 'Yes' : 'No' ) . "</td>";
-			echo "<td><a href='{$pin_url}' class='edu-btn'>Pin</a> <a href='{$delete_url}' class='edu-btn' style='background:#dc3545;' onclick='return confirm(\"Delete post?\")'>Delete</a></td></tr>";
+			echo "<td><a href='{$pin_url}' class='edu-btn'>Pin</a> <a href='{$lock_url}' class='edu-btn' style='background:#6c757d;'>{$lock_label}</a> <a href='{$delete_url}' class='edu-btn' style='background:#dc3545;' onclick='return confirm(\"Delete post?\")'>Delete</a></td></tr>";
 		}
 		echo '</tbody></table></div>';
 	}
@@ -247,7 +255,7 @@ class DashboardModule implements ModuleInterface {
 		echo '<p>' . esc_html__( 'Connect with fellow learners and your instructors.', 'edupreneur-pro' ) . '</p></header>';
 
 		$board = new \EdupreneurPro\Modules\Community\Services\DiscussionBoard();
-		$posts = $board->get_posts( 0 ); // Global posts for demo
+		$posts = $board->get_results_with_locking( 0 ); // Updated service call
 
 		echo '<div class="edu-card">';
 		echo '<h3>' . esc_html__( 'Recent Activity', 'edupreneur-pro' ) . '</h3>';
@@ -256,12 +264,18 @@ class DashboardModule implements ModuleInterface {
 		} else {
 			foreach ( $posts as $post ) {
 				$user = get_userdata( $post->user_id );
+				$locked_tag = $post->is_locked ? ' <span class="tag">Locked</span>' : '';
 				echo '<div style="border-bottom:1px solid #eee; padding:10px 0;">';
 				echo '<strong>' . ( $user ? esc_html( $user->display_name ) : 'Unknown' ) . '</strong>: ';
-				echo esc_html( $post->content );
+				echo esc_html( $post->content ) . $locked_tag;
 				echo '</div>';
 			}
 		}
+
+		$is_any_locked = false; // For global board, maybe check if a specific "thread" is locked?
+		// Since we don't have threads yet, let's just allow posting unless a global lock is set?
+		// Actually, let's just implement the UI for threads later.
+
 		echo '<form method="post" style="margin-top:20px;">';
 		wp_nonce_field( 'edu_new_post' );
 		echo '<textarea name="content" style="width:100%;" placeholder="What is on your mind?"></textarea>';
@@ -323,6 +337,9 @@ class DashboardModule implements ModuleInterface {
 			} elseif ( $_POST['edu_action'] === 'sample_data' ) {
 				\EdupreneurPro\Core\SystemService::add_sample_data();
 				echo '<div class="updated"><p>Sample data injected successfully.</p></div>';
+			} elseif ( $_POST['edu_action'] === 'send_reminders' ) {
+				$count = \EdupreneurPro\Core\SystemService::send_abandoned_reminders();
+				echo '<div class="updated"><p>' . sprintf( __( '%d abandoned checkout reminders sent.', 'edupreneur-pro' ), $count ) . '</p></div>';
 			} elseif ( $_POST['edu_action'] === 'save_keys' ) {
 				update_option( 'edu_stripe_key', sanitize_text_field( $_POST['stripe_key'] ) );
 				update_option( 'edu_paypal_email', sanitize_email( $_POST['paypal_email'] ) );
@@ -338,9 +355,10 @@ class DashboardModule implements ModuleInterface {
 		echo '<div class="edu-card"><h3>' . esc_html__( 'Platform Maintenance', 'edupreneur-pro' ) . '</h3>';
 		echo '<p>' . esc_html__( 'Use these tools to manage your database state. Warning: Clearing the database is irreversible.', 'edupreneur-pro' ) . '</p>';
 
-		echo '<form method="post" style="margin-top:20px; display:flex; gap:10px;">';
+		echo '<form method="post" style="margin-top:20px; display:flex; flex-wrap:wrap; gap:10px;">';
 		wp_nonce_field( 'edu_system_action' );
 		echo '<button type="submit" name="edu_action" value="sample_data" class="edu-btn">' . esc_html__( 'Load Sample Data', 'edupreneur-pro' ) . '</button>';
+		echo '<button type="submit" name="edu_action" value="send_reminders" class="edu-btn" style="background:#6c757d;">' . esc_html__( 'Process Abandoned Checkouts', 'edupreneur-pro' ) . '</button>';
 		echo '<button type="submit" name="edu_action" value="clear_db" class="edu-btn" style="background:#dc3545;" onclick="return confirm(\'Are you sure? This will delete all courses and students.\')">' . esc_html__( 'Reset Database', 'edupreneur-pro' ) . '</button>';
 		echo '</form></div>';
 

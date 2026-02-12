@@ -12,6 +12,10 @@ class DiscussionBoard {
 		return $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$this->table} WHERE course_id = %d AND recipient_id = 0 ORDER BY created_at DESC", $course_id ) );
 	}
 
+	public function get_results_with_locking( $course_id ) {
+		return $this->get_posts( $course_id );
+	}
+
 	public function get_direct_messages( $user_id, $other_user_id = 0 ) {
 		global $wpdb;
 		if ( $other_user_id > 0 ) {
@@ -47,6 +51,11 @@ class DiscussionBoard {
 	public function pin_post( $post_id ) {
 		global $wpdb;
 		return $wpdb->update( $this->table, array( 'is_pinned' => 1 ), array( 'id' => $post_id ) );
+	}
+
+	public function lock_post( $post_id, $locked = 1 ) {
+		global $wpdb;
+		return $wpdb->update( $this->table, array( 'is_locked' => $locked ), array( 'id' => $post_id ) );
 	}
 
 	public function delete_post( $post_id ) {

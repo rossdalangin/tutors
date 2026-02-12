@@ -133,6 +133,15 @@ class AffiliateModule implements ModuleInterface {
 		echo '<input type="text" value="' . esc_attr( $stats['referral_link'] ) . '" class="edu-btn-block" readonly onclick="this.select();">';
 		echo '<p class="edu-caption">' . esc_html__( 'Share this link to earn commissions on every sale.', 'edupreneur-pro' ) . '</p></div>';
 
+		echo '<div class="edu-card"><h3>' . esc_html__( 'Unpaid Balance', 'edupreneur-pro' ) . '</h3>';
+		echo '<div class="edu-stat-val">$' . number_format( $stats['unpaid_balance'], 2 ) . '</div>';
+		if ( $stats['payout_ready'] ) {
+			echo '<span class="tag tag-success">' . __( 'Payout Ready', 'edupreneur-pro' ) . '</span>';
+		} else {
+			echo '<span class="tag">' . sprintf( __( 'Min. Payout: $%s', 'edupreneur-pro' ), number_format($stats['threshold'], 2) ) . '</span>';
+		}
+		echo '</div>';
+
 		echo '<div class="edu-card"><h3>' . esc_html__( 'Total Earnings', 'edupreneur-pro' ) . '</h3>';
 		echo '<div class="edu-stat-val">$' . number_format( $stats['total_earnings'], 2 ) . '</div></div>';
 

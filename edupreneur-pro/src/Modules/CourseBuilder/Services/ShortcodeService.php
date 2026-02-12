@@ -274,6 +274,11 @@ class ShortcodeService {
 		if ( ! $course ) return '<p>' . __( 'Course not found.', 'edupreneur-pro' ) . '</p>';
 
 		$base_url = ( is_admin() && isset( $_GET['page'] ) ) ? admin_url( 'admin.php?page=' . sanitize_text_field( $_GET['page'] ) ) : get_permalink();
+
+		// Track Abandoned Checkout
+		$user_id = get_current_user_id();
+		set_transient( 'edu_abandoned_checkout_' . $user_id, array( 'course_id' => $course_id, 'time' => time() ), DAY_IN_SECONDS );
+
 		$coupon_repo = new \EdupreneurPro\Modules\Payments\Repositories\CouponRepository();
 		$discount = 0;
 		$applied_coupon_id = 0;
@@ -358,12 +363,26 @@ class ShortcodeService {
 				$coupon_repo->increment_usage( intval( $_POST['edu_applied_coupon'] ) );
 			}
 
+			// Clear Abandoned Checkout Track
+			delete_transient( 'edu_abandoned_checkout_' . get_current_user_id() );
+
 			// Enroll student
 			$wpdb->insert( "{$wpdb->prefix}edu_enrollments", array(
 				'student_id' => get_current_user_id(),
 				'course_id'  => $course_id,
 				'status'     => 'active'
 			) );
+
+			// Record Subscription if applicable
+			if ( $course->pricing_model === 'subscription' ) {
+				$wpdb->insert( "{$wpdb->prefix}edu_subscriptions", array(
+					'user_id'        => get_current_user_id(),
+					'course_id'      => $course_id,
+					'status'         => 'active',
+					'billing_period' => $course->billing_period,
+					'next_billing_at' => date( 'Y-m-d H:i:s', strtotime( '+1 ' . $course->billing_period ) )
+				) );
+			}
 
 			// Trigger Welcome Email
 			\EdupreneurPro\Core\EmailService::send_welcome_email( get_current_user_id(), $course_id );

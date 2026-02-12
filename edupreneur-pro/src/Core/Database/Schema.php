@@ -23,6 +23,8 @@ class Schema {
 				description longtext,
 				instructor_id bigint(20) UNSIGNED NOT NULL,
 				price decimal(10,2) DEFAULT '0.00',
+				pricing_model varchar(20) DEFAULT 'one-time',
+				billing_period varchar(20) DEFAULT '',
 				status varchar(20) DEFAULT 'draft',
 				created_at datetime DEFAULT CURRENT_TIMESTAMP,
 				updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -89,6 +91,7 @@ class Schema {
 				referral_code varchar(50) NOT NULL,
 				commission_rate decimal(5,2) DEFAULT '10.00',
 				status varchar(20) DEFAULT 'pending',
+				ip_address varchar(45) DEFAULT '',
 				PRIMARY KEY  (id)
 			) $charset_collate;",
 			"{$prefix}commissions" => "CREATE TABLE {$prefix}commissions (
@@ -108,6 +111,7 @@ class Schema {
 				parent_id bigint(20) UNSIGNED DEFAULT 0,
 				content text NOT NULL,
 				is_pinned tinyint(1) DEFAULT 0,
+				is_locked tinyint(1) DEFAULT 0,
 				created_at datetime DEFAULT CURRENT_TIMESTAMP,
 				PRIMARY KEY  (id)
 			) $charset_collate;",
@@ -181,6 +185,26 @@ class Schema {
 				object_id bigint(20) UNSIGNED,
 				details text,
 				created_at datetime DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY  (id)
+			) $charset_collate;",
+
+			"{$prefix}subscriptions" => "CREATE TABLE {$prefix}subscriptions (
+				id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+				user_id bigint(20) UNSIGNED NOT NULL,
+				course_id bigint(20) UNSIGNED NOT NULL,
+				status varchar(20) DEFAULT 'active',
+				billing_period varchar(20) DEFAULT 'monthly',
+				next_billing_at datetime,
+				created_at datetime DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY  (id)
+			) $charset_collate;",
+
+			"{$prefix}notes" => "CREATE TABLE {$prefix}notes (
+				id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+				user_id bigint(20) UNSIGNED NOT NULL,
+				lesson_id bigint(20) UNSIGNED NOT NULL,
+				content text NOT NULL,
+				updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 				PRIMARY KEY  (id)
 			) $charset_collate;",
 		);

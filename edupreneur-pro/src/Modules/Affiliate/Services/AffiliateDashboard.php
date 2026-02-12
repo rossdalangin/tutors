@@ -8,12 +8,17 @@ class AffiliateDashboard {
 		if ( ! $affiliate ) return array();
 		$earnings = $wpdb->get_var( $wpdb->prepare( "SELECT SUM(amount) FROM {$wpdb->prefix}edu_commissions WHERE affiliate_id = %d", $affiliate->id ) );
 		$conversions = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}edu_commissions WHERE affiliate_id = %d", $affiliate->id ) );
+		$unpaid = $wpdb->get_var( $wpdb->prepare( "SELECT SUM(amount) FROM {$wpdb->prefix}edu_commissions WHERE affiliate_id = %d AND status = 'unpaid'", $affiliate->id ) );
+		$threshold = get_option( 'edu_affiliate_payout_threshold', 50 );
 
 		return array(
 			'referral_code'  => $affiliate->referral_code,
 			'referral_link'  => add_query_arg( 'ref', $affiliate->referral_code, home_url( '/' ) ),
 			'total_earnings' => $earnings ?: 0,
+			'unpaid_balance' => $unpaid ?: 0,
 			'conversions'    => $conversions ?: 0,
+			'payout_ready'   => ($unpaid >= $threshold),
+			'threshold'      => $threshold
 		);
 	}
 }

@@ -80,6 +80,7 @@ class CommunityController extends WP_REST_Controller {
 		$data = array();
 		if ( isset( $request['content'] ) ) $data['content'] = sanitize_textarea_field( $request['content'] );
 		if ( isset( $request['is_pinned'] ) ) $data['is_pinned'] = intval( $request['is_pinned'] );
+		if ( isset( $request['is_locked'] ) ) $data['is_locked'] = intval( $request['is_locked'] );
 
 		$board->update_post( $id, $data );
 		return new WP_REST_Response( array( 'success' => true ), 200 );
