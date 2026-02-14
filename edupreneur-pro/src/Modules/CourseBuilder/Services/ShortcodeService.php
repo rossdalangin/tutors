@@ -298,6 +298,11 @@ class ShortcodeService {
 
 		$final_price = $course->price - $discount;
 
+		// Handle Free Trial
+		if ( $course->trial_days > 0 ) {
+			$final_price = 0.00; // First payment is free
+		}
+
 		if ( isset( $_POST['edu_confirm_purchase'] ) && check_admin_referer( 'edu_checkout' ) ) {
 			$gateway_id = isset( $_POST['edu_gateway_used'] ) ? sanitize_text_field( $_POST['edu_gateway_used'] ) : 'simulated';
 
@@ -327,6 +332,8 @@ class ShortcodeService {
 					<input type="hidden" name="edu_gateway_used" value="<?php echo esc_attr($gateway_id); ?>">
 					<input type="hidden" name="edu_final_price" value="<?php echo esc_attr($_POST['edu_final_price']); ?>">
 					<input type="hidden" name="edu_applied_coupon" value="<?php echo esc_attr($_POST['edu_applied_coupon']); ?>">
+					<input type="hidden" name="edu_item_type" value="<?php echo esc_attr($_POST['edu_item_type']); ?>">
+					<input type="hidden" name="edu_item_id" value="<?php echo esc_attr($_POST['edu_item_id']); ?>">
 				</form>
 
 				<script>
@@ -342,6 +349,8 @@ class ShortcodeService {
 		if ( isset( $_POST['edu_final_enroll'] ) && check_admin_referer( 'edu_checkout' ) ) {
 			$gateway_id = isset( $_POST['edu_gateway_used'] ) ? sanitize_text_field( $_POST['edu_gateway_used'] ) : 'simulated';
 			$paid_amount = isset( $_POST['edu_final_price'] ) ? floatval( $_POST['edu_final_price'] ) : $course->price;
+			$item_type = sanitize_text_field( $_POST['edu_item_type'] );
+			$item_id = intval( $_POST['edu_item_id'] );
 
 			// Simulate order creation
 			$wpdb->insert( "{$wpdb->prefix}edu_orders", array(
@@ -367,20 +376,42 @@ class ShortcodeService {
 			delete_transient( 'edu_abandoned_checkout_' . get_current_user_id() );
 
 			// Enroll student
-			$wpdb->insert( "{$wpdb->prefix}edu_enrollments", array(
-				'student_id' => get_current_user_id(),
-				'course_id'  => $course_id,
-				'status'     => 'active'
-			) );
+			if ( $item_type === 'course' && $course->course_type === 'bundle' ) {
+				$bundle_items = $wpdb->get_results( $wpdb->prepare( "SELECT course_id FROM {$wpdb->prefix}edu_bundle_items WHERE bundle_id = %d", $item_id ) );
+				foreach ( $bundle_items as $bi ) {
+					$wpdb->insert( "{$wpdb->prefix}edu_enrollments", array(
+						'student_id' => get_current_user_id(),
+						'course_id'  => $bi->course_id,
+						'status'     => 'active'
+					) );
+				}
+				// Also enroll in the bundle itself for tracking
+				$wpdb->insert( "{$wpdb->prefix}edu_enrollments", array(
+					'student_id' => get_current_user_id(),
+					'course_id'  => $item_id,
+					'status'     => 'active'
+				) );
+			} else {
+				$wpdb->insert( "{$wpdb->prefix}edu_enrollments", array(
+					'student_id' => get_current_user_id(),
+					'course_id'  => $item_id,
+					'status'     => 'active'
+				) );
+			}
 
 			// Record Subscription if applicable
 			if ( $course->pricing_model === 'subscription' ) {
+				$next_billing = date( 'Y-m-d H:i:s', strtotime( '+1 ' . $course->billing_period ) );
+				if ( $course->trial_days > 0 ) {
+					$next_billing = date( 'Y-m-d H:i:s', strtotime( '+' . $course->trial_days . ' days' ) );
+				}
+
 				$wpdb->insert( "{$wpdb->prefix}edu_subscriptions", array(
 					'user_id'        => get_current_user_id(),
 					'course_id'      => $course_id,
 					'status'         => 'active',
 					'billing_period' => $course->billing_period,
-					'next_billing_at' => date( 'Y-m-d H:i:s', strtotime( '+1 ' . $course->billing_period ) )
+					'next_billing_at' => $next_billing
 				) );
 			}
 
@@ -436,10 +467,17 @@ class ShortcodeService {
 		$output .= '<h2 style="margin-top:0;">' . __( 'Complete Your Enrollment', 'edupreneur-pro' ) . '</h2>';
 		$output .= '<div style="background:#f8f9fa; padding:20px; border-radius:8px; margin-bottom:30px;">';
 		$output .= '<div style="display:flex; justify-content:space-between; margin-bottom:10px;"><strong>' . __( 'Course Title:', 'edupreneur-pro' ) . '</strong><span>' . esc_html( $course->title ) . '</span></div>';
+		if ( $course->trial_days > 0 ) {
+			$output .= '<div style="display:flex; justify-content:space-between; margin-bottom:10px; color:var(--edu-success);"><strong>' . __( 'Trial Period:', 'edupreneur-pro' ) . '</strong><span>' . $course->trial_days . ' ' . __( 'Days Free', 'edupreneur-pro' ) . '</span></div>';
+		}
 		if ( $discount > 0 ) {
 			$output .= '<div style="display:flex; justify-content:space-between; margin-bottom:10px; color:#dc3545;"><strong>' . __( 'Discount:', 'edupreneur-pro' ) . '</strong><span>-$' . number_format( $discount, 2 ) . '</span></div>';
 		}
-		$output .= '<div style="display:flex; justify-content:space-between; font-size:1.2em; border-top:1px solid #ddd; padding-top:10px;"><strong>' . __( 'Total Due:', 'edupreneur-pro' ) . '</strong><span style="color:var(--edu-primary); font-weight:700;">$' . number_format( $final_price, 2 ) . '</span></div>';
+		if ( $course->installment_count > 1 ) {
+			$output .= '<div style="display:flex; justify-content:space-between; margin-bottom:10px; color:var(--edu-primary);"><strong>' . __( 'Installment Plan:', 'edupreneur-pro' ) . '</strong><span>' . $course->installment_count . ' x $' . number_format($final_price / $course->installment_count, 2) . '</span></div>';
+			$final_price = $final_price / $course->installment_count; // Only pay first installment
+		}
+		$output .= '<div style="display:flex; justify-content:space-between; font-size:1.2em; border-top:1px solid #ddd; padding-top:10px;"><strong>' . __( 'Total Due Today:', 'edupreneur-pro' ) . '</strong><span style="color:var(--edu-primary); font-weight:700;">$' . number_format( $final_price, 2 ) . '</span></div>';
 		$output .= '</div>';
 
 		$output .= '<form method="post" style="margin-bottom:30px;">';
@@ -454,6 +492,8 @@ class ShortcodeService {
 		$output .= wp_nonce_field( 'edu_checkout', '_wpnonce', true, false );
 		$output .= '<input type="hidden" name="edu_final_price" value="' . esc_attr($final_price) . '">';
 		$output .= '<input type="hidden" name="edu_applied_coupon" value="' . esc_attr($applied_coupon_id) . '">';
+		$output .= '<input type="hidden" name="edu_item_type" value="' . esc_attr($item_type) . '">';
+		$output .= '<input type="hidden" name="edu_item_id" value="' . esc_attr($item_id) . '">';
 		$output .= '<div class="edu-gateway-options" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:20px;">';
 		$output .= '<label style="border:2px solid #eee; padding:15px; border-radius:8px; text-align:center; cursor:pointer; display:block;"><input type="radio" name="edu_gateway" value="stripe" checked><br><strong>Stripe</strong><br><small>Cards / ApplePay</small></label>';
 		$output .= '<label style="border:2px solid #eee; padding:15px; border-radius:8px; text-align:center; cursor:pointer; display:block;"><input type="radio" name="edu_gateway" value="paypal"><br><strong>PayPal</strong><br><small>PayPal / Credit</small></label>';
@@ -516,6 +556,8 @@ class ShortcodeService {
 						<input type="hidden" name="edu_gateway_used" value="<?php echo esc_attr($gateway_id); ?>">
 						<input type="hidden" name="edu_final_price" value="<?php echo esc_attr($_POST['edu_final_price']); ?>">
 						<input type="hidden" name="edu_applied_coupon" value="<?php echo esc_attr($_POST['edu_applied_coupon']); ?>">
+						<input type="hidden" name="edu_item_type" value="<?php echo esc_attr($_POST['edu_item_type']); ?>">
+						<input type="hidden" name="edu_item_id" value="<?php echo esc_attr($_POST['edu_item_id']); ?>">
 						<button type="submit" style="width:100%; padding:14px; background:<?php echo $accent_color; ?>; color:#fff; border:none; border-radius:4px; font-size:16px; font-weight:600; cursor:pointer; box-shadow: 0 4px 6px rgba(50,50,93,.11), 0 1px 3px rgba(0,0,0,.08); transition: all 0.15s ease;">
 							<?php printf( __('Pay $%s with %s', 'edupreneur-pro'), number_format(floatval($_POST['edu_final_price']), 2), $gateway_name ); ?>
 						</button>

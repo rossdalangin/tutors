@@ -21,7 +21,11 @@ class CourseRepository {
 
 	public function find( $id ) {
 		global $wpdb;
-		return $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$this->table} WHERE id = %d", $id ) );
+		$course = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$this->table} WHERE id = %d", $id ) );
+		if ( $course && $course->course_type === 'bundle' ) {
+			$course->bundle_items = $wpdb->get_results( $wpdb->prepare( "SELECT course_id FROM {$wpdb->prefix}edu_bundle_items WHERE bundle_id = %d", $id ) );
+		}
+		return $course;
 	}
 
 	public function create( $data ) {

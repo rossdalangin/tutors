@@ -22,7 +22,14 @@ class SystemService {
 			'edu_assignments',
 			'edu_resources',
 			'edu_kb',
-			'edu_assets'
+			'edu_assets',
+			'edu_coupons',
+			'edu_subscriptions',
+			'edu_notes',
+			'edu_license_keys',
+			'edu_audit_log',
+			'edu_bundle_items',
+			'edu_payouts'
 		);
 
 		foreach ( $tables as $table ) {
@@ -233,6 +240,23 @@ class SystemService {
 			'title'      => 'Sidebar Banner 300x250',
 			'content'    => 'https://via.placeholder.com/300x250.png?text=Join+EdupreneurPro+Today',
 			'asset_type' => 'banner'
+		) );
+
+		// Sample Coupons
+		$wpdb->insert( "{$wpdb->prefix}edu_coupons", array( 'code' => 'WELCOME20', 'discount_type' => 'percentage', 'discount_amount' => 20.00, 'usage_limit' => 100 ) );
+
+		// Log action
+		self::log_action( $instructor_id, 'LOAD_SAMPLE_DATA', 'system', 0, 'Instructor triggered sample data injection.' );
+	}
+
+	public static function log_action( $user_id, $action, $object_type = '', $object_id = 0, $details = '' ) {
+		global $wpdb;
+		return $wpdb->insert( "{$wpdb->prefix}edu_audit_log", array(
+			'user_id'     => $user_id,
+			'action'      => $action,
+			'object_type' => $object_type,
+			'object_id'   => $object_id,
+			'details'     => $details
 		) );
 	}
 

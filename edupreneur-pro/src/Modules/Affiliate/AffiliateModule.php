@@ -149,8 +149,38 @@ class AffiliateModule implements ModuleInterface {
 		echo '<div class="edu-stat-val">' . intval( $stats['conversions'] ) . '</div></div>';
 		echo '</div>';
 
+		if ( $stats['unpaid_balance'] > 0 ) {
+			echo '<div class="edu-card" style="margin-top:20px;"><h3>' . __( 'Request Withdrawal', 'edupreneur-pro' ) . '</h3>';
+			echo '<p>' . sprintf( __( 'You have a pending balance of $%s.', 'edupreneur-pro' ), number_format($stats['unpaid_balance'], 2) ) . '</p>';
+			if ( $stats['payout_ready'] ) {
+				echo '<form method="post">';
+				wp_nonce_field( 'edu_payout_action' );
+				echo '<button type="submit" name="edu_request_payout" value="1" class="edu-btn">' . __( 'Request Payout Now', 'edupreneur-pro' ) . '</button>';
+				echo '</form>';
+			} else {
+				echo '<p class="edu-caption">' . sprintf( __( 'You will be able to request a payout once you reach the minimum threshold of $%s.', 'edupreneur-pro' ), number_format($stats['threshold'], 2) ) . '</p>';
+			}
+			echo '</div>';
+		}
+
 		global $wpdb;
-		$commissions = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}edu_commissions WHERE affiliate_id = (SELECT id FROM {$wpdb->prefix}edu_affiliates WHERE user_id = %d) ORDER BY created_at DESC LIMIT 5", get_current_user_id() ) );
+		$aff_id = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}edu_affiliates WHERE user_id = %d", get_current_user_id() ) );
+
+		if ( isset( $_POST['edu_request_payout'] ) && check_admin_referer( 'edu_payout_action' ) ) {
+			if ( $stats['payout_ready'] ) {
+				$wpdb->insert( "{$wpdb->prefix}edu_payouts", array(
+					'affiliate_id' => $aff_id,
+					'amount'       => $stats['unpaid_balance'],
+					'status'       => 'pending',
+					'method'       => 'PayPal'
+				) );
+				// Mark commissions as "pending payout"
+				$wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->prefix}edu_commissions SET status = 'processing' WHERE affiliate_id = %d AND status = 'unpaid'", $aff_id ) );
+				echo '<div class="updated"><p>' . __( 'Payout request submitted successfully.', 'edupreneur-pro' ) . '</p></div>';
+			}
+		}
+
+		$commissions = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}edu_commissions WHERE affiliate_id = %d ORDER BY created_at DESC LIMIT 5", $aff_id ) );
 
 		echo '<div class="edu-card" style="margin-top:20px;"><h3>' . esc_html__( 'Recent Referral Activity', 'edupreneur-pro' ) . '</h3>';
 		if ( empty( $commissions ) ) {

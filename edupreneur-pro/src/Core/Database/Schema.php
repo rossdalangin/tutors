@@ -22,9 +22,13 @@ class Schema {
 				category_id bigint(20) UNSIGNED DEFAULT 0,
 				description longtext,
 				instructor_id bigint(20) UNSIGNED NOT NULL,
+				course_type varchar(20) DEFAULT 'course',
 				price decimal(10,2) DEFAULT '0.00',
 				pricing_model varchar(20) DEFAULT 'one-time',
 				billing_period varchar(20) DEFAULT '',
+				trial_days int(11) DEFAULT 0,
+				installment_count int(11) DEFAULT 0,
+				installment_interval varchar(20) DEFAULT '',
 				status varchar(20) DEFAULT 'draft',
 				created_at datetime DEFAULT CURRENT_TIMESTAMP,
 				updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -35,6 +39,24 @@ class Schema {
 				course_id bigint(20) UNSIGNED NOT NULL,
 				title varchar(255) NOT NULL,
 				order_index int(11) DEFAULT 0,
+				created_at datetime DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY  (id)
+			) $charset_collate;",
+
+			"{$prefix}bundle_items" => "CREATE TABLE {$prefix}bundle_items (
+				id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+				bundle_id bigint(20) UNSIGNED NOT NULL,
+				course_id bigint(20) UNSIGNED NOT NULL,
+				PRIMARY KEY  (id)
+			) $charset_collate;",
+
+			"{$prefix}payouts" => "CREATE TABLE {$prefix}payouts (
+				id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+				affiliate_id bigint(20) UNSIGNED NOT NULL,
+				amount decimal(10,2) NOT NULL,
+				status varchar(20) DEFAULT 'pending',
+				method varchar(50),
+				details text,
 				created_at datetime DEFAULT CURRENT_TIMESTAMP,
 				PRIMARY KEY  (id)
 			) $charset_collate;",
@@ -205,6 +227,16 @@ class Schema {
 				lesson_id bigint(20) UNSIGNED NOT NULL,
 				content text NOT NULL,
 				updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+				PRIMARY KEY  (id)
+			) $charset_collate;",
+
+			"{$prefix}license_keys" => "CREATE TABLE {$prefix}license_keys (
+				id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+				product_id bigint(20) UNSIGNED NOT NULL,
+				user_id bigint(20) UNSIGNED NOT NULL,
+				license_key varchar(100) NOT NULL,
+				status varchar(20) DEFAULT 'active',
+				created_at datetime DEFAULT CURRENT_TIMESTAMP,
 				PRIMARY KEY  (id)
 			) $charset_collate;",
 		);

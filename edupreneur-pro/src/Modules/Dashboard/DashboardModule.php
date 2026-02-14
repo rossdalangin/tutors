@@ -39,6 +39,15 @@ class DashboardModule implements ModuleInterface {
 
 		add_submenu_page(
 			'edupreneur-pro',
+			__( 'Affiliate Payouts', 'edupreneur-pro' ),
+			__( 'Payouts', 'edupreneur-pro' ),
+			'manage_options',
+			'edu-payouts',
+			array( $this, 'render_payouts_page' )
+		);
+
+		add_submenu_page(
+			'edupreneur-pro',
 			__( 'System Settings', 'edupreneur-pro' ),
 			__( 'Settings & Tools', 'edupreneur-pro' ),
 			'manage_options',
@@ -458,6 +467,42 @@ class DashboardModule implements ModuleInterface {
 			wp_nonce_field( 'edu_kb_action' );
 			echo "<input type='hidden' name='kb_id' value='{$item->id}'>";
 			echo "<button type='submit' name='edu_kb_action' value='delete' class='edu-btn' style='background:#dc3545;' onclick='return confirm(\"Delete article?\")'>Delete</button></form></td></tr>";
+		}
+		echo '</tbody></table></div>';
+	}
+
+	public function render_payouts_page() {
+		global $wpdb;
+		if ( isset( $_GET['action'] ) && $_GET['action'] === 'approve' && isset( $_GET['id'] ) ) {
+			check_admin_referer( 'edu_payout_admin' );
+			$payout_id = intval( $_GET['id'] );
+			$payout = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}edu_payouts WHERE id = %d", $payout_id ) );
+
+			if ( $payout ) {
+				$wpdb->update( "{$wpdb->prefix}edu_payouts", array( 'status' => 'paid' ), array( 'id' => $payout_id ) );
+				// Mark associated commissions as paid
+				$wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->prefix}edu_commissions SET status = 'paid' WHERE affiliate_id = %d AND status = 'processing'", $payout->affiliate_id ) );
+
+				\EdupreneurPro\Core\SystemService::log_action( get_current_user_id(), 'PAYOUT_APPROVE', 'payout', $payout_id, 'Approved payout for affiliate #' . $payout->affiliate_id );
+				echo '<div class="updated"><p>' . __( 'Payout approved and marked as paid.', 'edupreneur-pro' ) . '</p></div>';
+			}
+		}
+
+		$payouts = $wpdb->get_results( "SELECT p.*, u.display_name FROM {$wpdb->prefix}edu_payouts p JOIN {$wpdb->prefix}edu_affiliates a ON p.affiliate_id = a.id JOIN {$wpdb->users} u ON a.user_id = u.ID ORDER BY p.created_at DESC" );
+
+		echo '<div class="edu-admin-wrap"><h1>Affiliate Payout Requests</h1>';
+		echo '<table class="wp-list-table widefat fixed striped"><thead><tr><th>Date</th><th>Affiliate</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+		if ( empty( $payouts ) ) {
+			echo '<tr><td colspan="5">No payout requests found.</td></tr>';
+		} else {
+			foreach ( $payouts as $p ) {
+				echo "<tr><td>{$p->created_at}</td><td>" . esc_html( $p->display_name ) . "</td><td>\${$p->amount}</td><td>{$p->status}</td><td>";
+				if ( $p->status === 'pending' ) {
+					$url = wp_nonce_url( admin_url( 'admin.php?page=edu-payouts&action=approve&id=' . $p->id ), 'edu_payout_admin' );
+					echo "<a href='{$url}' class='edu-btn' style='background:#28a745;'>Approve & Mark Paid</a>";
+				}
+				echo "</td></tr>";
+			}
 		}
 		echo '</tbody></table></div>';
 	}
