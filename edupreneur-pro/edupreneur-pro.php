@@ -54,6 +54,8 @@ final class EdupreneurPro {
 		add_action( 'init', array( $this, 'ensure_admin_capabilities' ) );
 		add_shortcode( 'edu_student_dashboard', array( $this, 'render_student_dashboard' ) );
 		add_filter( 'the_content', array( $this, 'handle_lesson_display' ) );
+		add_filter( 'theme_page_templates', array( $this, 'register_page_templates' ) );
+		add_filter( 'template_include', array( $this, 'load_page_templates' ) );
 		register_activation_hook( __FILE__, array( $this, 'activate' ) );
 	}
 
@@ -608,6 +610,31 @@ final class EdupreneurPro {
 	}
 
 	public function on_plugins_loaded() {}
+
+	/**
+	 * Register plugin page templates.
+	 */
+	public function register_page_templates( $templates ) {
+		$templates['templates/edu-canvas.php'] = __( 'Edupreneur Canvas', 'edupreneur-pro' );
+		$templates['templates/edu-full-width.php'] = __( 'Edupreneur Full Width', 'edupreneur-pro' );
+		return $templates;
+	}
+
+	/**
+	 * Load plugin page templates.
+	 */
+	public function load_page_templates( $template ) {
+		$page_template = get_post_meta( get_the_ID(), '_wp_page_template', true );
+
+		if ( strpos( $page_template, 'templates/' ) === 0 ) {
+			$file = plugin_dir_path( __FILE__ ) . $page_template;
+			if ( file_exists( $file ) ) {
+				return $file;
+			}
+		}
+
+		return $template;
+	}
 
 	/**
 	 * Get video embed code from URL.

@@ -144,6 +144,15 @@ class DashboardModule implements ModuleInterface {
 			'edu-product-mgmt',
 			array( $this, 'render_product_mgmt_page' )
 		);
+
+		add_submenu_page(
+			'edupreneur-pro',
+			__( 'Setup Wizard', 'edupreneur-pro' ),
+			__( 'Setup Wizard', 'edupreneur-pro' ),
+			'manage_options',
+			'edu-setup-wizard',
+			array( $this, 'render_setup_wizard' )
+		);
 	}
 
 	public function render_orders_page() {
@@ -353,6 +362,17 @@ class DashboardModule implements ModuleInterface {
 				update_option( 'edu_stripe_key', sanitize_text_field( $_POST['stripe_key'] ) );
 				update_option( 'edu_paypal_email', sanitize_email( $_POST['paypal_email'] ) );
 				echo '<div class="updated"><p>Keys saved.</p></div>';
+			} elseif ( $_POST['edu_action'] === 'create_pages' ) {
+				$count = \EdupreneurPro\Core\PageService::create_pages();
+				echo '<div class="updated"><p>' . sprintf( __( '%d pages created or updated.', 'edupreneur-pro' ), $count ) . '</p></div>';
+			} elseif ( $_POST['edu_action'] === 'save_page_mappings' ) {
+				update_option( 'edu_home_page', intval( $_POST['home_page'] ) );
+				update_option( 'edu_dashboard_page', intval( $_POST['dashboard_page'] ) );
+				update_option( 'edu_checkout_page', intval( $_POST['checkout_page'] ) );
+				update_option( 'edu_messages_page', intval( $_POST['messages_page'] ) );
+				update_option( 'edu_directory_page', intval( $_POST['directory_page'] ) );
+				update_option( 'edu_community_page', intval( $_POST['community_page'] ) );
+				echo '<div class="updated"><p>Page mappings saved.</p></div>';
 			}
 		}
 
@@ -361,6 +381,10 @@ class DashboardModule implements ModuleInterface {
 		echo '<p>' . esc_html__( 'Manage your platform defaults and use development tools.', 'edupreneur-pro' ) . '</p></header>';
 
 		echo '<div class="edu-grid">';
+		echo '<div class="edu-card"><h3>' . esc_html__( 'Setup Wizard', 'edupreneur-pro' ) . '</h3>';
+		echo '<p>' . esc_html__( 'Need help setting up? Our onboarding wizard will guide you through core configuration.', 'edupreneur-pro' ) . '</p>';
+		echo '<a href="'.admin_url('admin.php?page=edu-setup-wizard').'" class="edu-btn" style="margin-top:10px; display:inline-block;">' . esc_html__( 'Launch Setup Wizard', 'edupreneur-pro' ) . '</a></div>';
+
 		echo '<div class="edu-card"><h3>' . esc_html__( 'Platform Maintenance', 'edupreneur-pro' ) . '</h3>';
 		echo '<p>' . esc_html__( 'Use these tools to manage your database state. Warning: Clearing the database is irreversible.', 'edupreneur-pro' ) . '</p>';
 
@@ -380,6 +404,31 @@ class DashboardModule implements ModuleInterface {
 		echo '<p class="edu-field-caption">' . esc_html__( 'The email address associated with your PayPal Business account for receiving payments.', 'edupreneur-pro' ) . '</p></div>';
 		echo '<button type="submit" name="edu_action" value="save_keys" class="edu-btn">' . esc_html__( 'Save API Keys', 'edupreneur-pro' ) . '</button>';
 		echo '</form></div>';
+
+		echo '<div class="edu-card" style="grid-column: 1/-1;"><h3>' . esc_html__( 'Academy Page Mappings', 'edupreneur-pro' ) . '</h3>';
+		echo '<p>' . __( 'Tell the plugin which WordPress pages should handle specific academy features.', 'edupreneur-pro' ) . '</p>';
+		echo '<form method="post" style="margin-top:20px;">';
+		wp_nonce_field( 'edu_system_action' );
+
+		$page_options = array(
+			'home_page'      => array( 'label' => 'Academy Home', 'option' => 'edu_home_page' ),
+			'dashboard_page' => array( 'label' => 'Student Dashboard', 'option' => 'edu_dashboard_page' ),
+			'checkout_page'  => array( 'label' => 'Checkout', 'option' => 'edu_checkout_page' ),
+			'messages_page'  => array( 'label' => 'Messages', 'option' => 'edu_messages_page' ),
+			'directory_page' => array( 'label' => 'Member Directory', 'option' => 'edu_directory_page' ),
+			'community_page' => array( 'label' => 'Community Board', 'option' => 'edu_community_page' ),
+		);
+
+		foreach ( $page_options as $key => $data ) {
+			echo '<div class="edu-form-group"><label>'.$data['label'].'</label>';
+			wp_dropdown_pages( array( 'name' => $key, 'selected' => get_option( $data['option'] ), 'show_option_none' => '-- Select Page --' ) );
+			echo '</div>';
+		}
+
+		echo '<button type="submit" name="edu_action" value="save_page_mappings" class="edu-btn">' . esc_html__( 'Save Page Mappings', 'edupreneur-pro' ) . '</button>';
+		echo ' <button type="submit" name="edu_action" value="create_pages" class="edu-btn" style="background:#6c757d;">' . esc_html__( 'Auto-Create Missing Pages', 'edupreneur-pro' ) . '</button>';
+		echo '</form></div>';
+
 		echo '</div></div>';
 	}
 
@@ -586,6 +635,54 @@ class DashboardModule implements ModuleInterface {
 			}
 		}
 		echo '</tbody></table></div>';
+	}
+
+	public function render_setup_wizard() {
+		$step = isset( $_GET['step'] ) ? intval( $_GET['step'] ) : 1;
+
+		echo '<div class="edu-admin-wrap">';
+		echo '<div class="edu-card" style="max-width:800px; margin: 40px auto; padding: 40px; text-align:center;">';
+
+		echo '<div style="display:flex; justify-content:space-between; margin-bottom:40px; position:relative;">';
+		for ($i=1; $i<=4; $i++) {
+			$bg = $i <= $step ? 'var(--edu-primary)' : '#ddd';
+			$active = $i === $step ? ' active' : '';
+			echo '<div class="edu-wizard-step'.$active.'" style="background:'.$bg.'; color:white;">'.$i.'</div>';
+		}
+		echo '<div style="position:absolute; top:20px; left:0; right:0; height:2px; background:#ddd; z-index:0;"></div>';
+		echo '</div>';
+
+		if ( $step === 1 ) {
+			echo '<h1>' . __( 'Welcome to EdupreneurPro', 'edupreneur-pro' ) . '</h1>';
+			echo '<p>' . __( 'Let\'s get your academy up and running in 3 minutes.', 'edupreneur-pro' ) . '</p>';
+			echo '<a href="'.admin_url('admin.php?page=edu-setup-wizard&step=2').'" class="edu-btn" style="padding:15px 30px; font-size:1.2em;">' . __( 'Start Onboarding', 'edupreneur-pro' ) . '</a>';
+		} elseif ( $step === 2 ) {
+			echo '<h1>' . __( 'Step 2: Core Pages', 'edupreneur-pro' ) . '</h1>';
+			echo '<p>' . __( 'We will create the Home, Dashboard, Checkout, and Community pages for you.', 'edupreneur-pro' ) . '</p>';
+			echo '<form method="post" action="'.admin_url('admin.php?page=edu-settings').'">';
+			wp_nonce_field( 'edu_system_action' );
+			echo '<input type="hidden" name="edu_action" value="create_pages">';
+			echo '<button type="submit" class="edu-btn">' . __( 'Auto-Create Pages & Continue', 'edupreneur-pro' ) . '</button>';
+			echo '</form>';
+			echo '<p><a href="'.admin_url('admin.php?page=edu-setup-wizard&step=3').'">' . __( 'Skip, I already have pages', 'edupreneur-pro' ) . '</a></p>';
+		} elseif ( $step === 3 ) {
+			echo '<h1>' . __( 'Step 3: Payments', 'edupreneur-pro' ) . '</h1>';
+			echo '<p>' . __( 'Configure how you want to receive money.', 'edupreneur-pro' ) . '</p>';
+			echo '<form method="post" action="'.admin_url('admin.php?page=edu-settings').'">';
+			wp_nonce_field( 'edu_system_action' );
+			echo '<div class="edu-form-group"><label>Stripe Key</label><input type="password" name="stripe_key" value="'.esc_attr(get_option('edu_stripe_key')).'"></div>';
+			echo '<button type="submit" name="edu_action" value="save_keys" class="edu-btn">' . __( 'Save & Next', 'edupreneur-pro' ) . '</button>';
+			echo '</form>';
+		} elseif ( $step === 4 ) {
+			echo '<h1>' . __( 'Ready to Launch!', 'edupreneur-pro' ) . '</h1>';
+			echo '<p>' . __( 'Your academy is configured. Now add your first course.', 'edupreneur-pro' ) . '</p>';
+			echo '<div style="display:flex; gap:10px; justify-content:center;">';
+			echo '<a href="'.admin_url('admin.php?page=edupreneur-pro').'" class="edu-btn">' . __( 'Create a Course', 'edupreneur-pro' ) . '</a>';
+			echo '<a href="'.admin_url('admin.php?page=edu-dashboard').'" class="edu-btn" style="background:#6c757d;">' . __( 'View Dashboard', 'edupreneur-pro' ) . '</a>';
+			echo '</div>';
+		}
+
+		echo '</div></div>';
 	}
 
 	public function render_dashboard() {
