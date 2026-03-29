@@ -11,6 +11,9 @@ class ShortcodeService {
 		add_shortcode( 'edu_certificate', array( $this, 'render_certificate' ) );
 		add_shortcode( 'edu_messages', array( $this, 'render_messages' ) );
 		add_shortcode( 'edu_directory', array( $this, 'render_directory' ) );
+		add_shortcode( 'edu_student_community', array( $this, 'render_student_community' ) );
+
+		add_action( 'template_redirect', array( $this, 'handle_community_post_submission' ) );
 	}
 
 	public function render_course_card_shortcode( $atts ) {
@@ -168,6 +171,71 @@ class ShortcodeService {
 			echo '</div>';
 		}
 		echo '</div></div>';
+		return ob_get_clean();
+	}
+
+	public function handle_community_post_submission() {
+		if ( ! is_user_logged_in() ) {
+			return;
+		}
+
+		if ( isset( $_POST['edu_community_content'] ) && check_admin_referer( 'edu_new_community_post' ) ) {
+			$board = new \EdupreneurPro\Modules\Community\Services\DiscussionBoard();
+			$board->create_post( array(
+				'content'   => $_POST['edu_community_content'],
+				'course_id' => 0
+			) );
+			wp_safe_redirect( add_query_arg( 'post_sent', 1 ) );
+			exit;
+		}
+	}
+
+	public function render_student_community() {
+		if ( ! is_user_logged_in() ) {
+			return '<p>' . __( 'Please log in to view the community discussion.', 'edupreneur-pro' ) . '</p>';
+		}
+
+		$board = new \EdupreneurPro\Modules\Community\Services\DiscussionBoard();
+		$posts = $board->get_results_with_locking( 0 );
+
+		ob_start();
+		echo '<div class="edu-community-container edu-card">';
+		echo '<h2>' . __( 'Community Discussion Board', 'edupreneur-pro' ) . '</h2>';
+
+		if ( isset( $_GET['post_sent'] ) ) {
+			echo '<div class="edu-card" style="background:#d4edda; color:#155724; border:1px solid #c3e6cb; margin-bottom:20px;">' . __( 'Post shared with the community!', 'edupreneur-pro' ) . '</div>';
+		}
+
+		echo '<div class="edu-activity-feed" style="margin-bottom:30px;">';
+		if ( empty( $posts ) ) {
+			echo '<p style="text-align:center; color:#999;">' . __( 'No activity yet. Be the first to start a conversation!', 'edupreneur-pro' ) . '</p>';
+		} else {
+			foreach ( $posts as $post ) {
+				$user = get_userdata( $post->user_id );
+				$locked_tag = $post->is_locked ? ' <span class="tag">Locked</span>' : '';
+				echo '<div class="edu-post-item" style="border-bottom:1px solid #eee; padding:15px 0;">';
+				echo '<div style="display:flex; gap:10px; align-items:center; margin-bottom:5px;">';
+				echo get_avatar( $post->user_id, 32, '', '', array( 'style' => 'border-radius:50%;' ) );
+				echo '<strong>' . ( $user ? esc_html( $user->display_name ) : 'Unknown' ) . '</strong>';
+				echo '<span style="font-size:12px; color:#999;">' . date( 'M j, H:i', strtotime( $post->created_at ) ) . '</span>';
+				echo $locked_tag;
+				echo '</div>';
+				echo '<div style="padding-left:42px;">' . wp_kses_post( $post->content ) . '</div>';
+				echo '</div>';
+			}
+		}
+		echo '</div>';
+
+		echo '<div class="edu-new-post-form">';
+		echo '<h3>' . __( 'Join the Conversation', 'edupreneur-pro' ) . '</h3>';
+		echo '<form method="post">';
+		wp_nonce_field( 'edu_new_community_post' );
+		echo '<textarea name="edu_community_content" style="width:100%; height:100px; padding:10px; border-radius:8px; border:1px solid #ddd;" placeholder="' . __( 'What is on your mind?', 'edupreneur-pro' ) . '" required></textarea>';
+		echo '<button type="submit" class="edu-btn" style="margin-top:10px;">' . __( 'Post to Community', 'edupreneur-pro' ) . '</button>';
+		echo '</form>';
+		echo '</div>';
+
+		echo '</div>';
 		return ob_get_clean();
 	}
 
